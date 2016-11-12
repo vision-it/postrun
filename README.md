@@ -2,6 +2,3 @@
 
 # Postrun
 Deploys Puppet modules from modules.yaml
-
-# Todo
-* Make multithreaded

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
 
-import yaml
-import subprocess
 import os
 import shutil
+import subprocess
 import sys
+import threading
+import yaml
 
 
 def git(*args):
@@ -119,16 +120,26 @@ def load_modules(dir_path, environment='production', location='default'):
 
 
 def deploy_hiera(hiera_dir, hiera_opt='/opt/puppet/hiera'):
+    """
+    Set the symlink for the Hiera data in Vagrant
+    """
 
     shutil.rmtree(hiera_dir)
     os.symlink(hiera_opt, hiera_dir)
 
 
-def deploy_modules_vagrant(dir_path, modules, environment='production'):
+def deploy_modules_vagrant(dir_path,
+                           modules,
+                           hiera_path='/etc/puppetlabs/code/hieradata',
+                           opt_path='/opt/puppet/modules',
+                           environment='production'):
+    """
+    Deploys all modules in a Vagrant installation.
+    Uses symlinks for modules present in /opt
+    """
 
-    #TODO Flexible enough?
-    opt_path = '/opt/puppet/modules'
-    hiera_dir = os.path.join('/etc/puppetlabs/code/hieradata', environment)
+    threads = []
+    hiera_dir = os.path.join(hiera_path, environment)
 
     deploy_hiera(hiera_dir)
 
@@ -140,18 +151,31 @@ def deploy_modules_vagrant(dir_path, modules, environment='production'):
             dst = dir_path
             os.symlink(src, dst)
         else:
-            clone_module(module, dir_path)
+            t = threading.Thread(target=clone_module, args=(module, dir_path))
+            threads.append(t)
+            t.start()
 
 
 def deploy_modules(dir_path, modules, environment='production'):
+    """
+    Deploys all modules passed via git.
+    """
+
+    threads = []
 
     for module in modules.items():
-        clone_module(module, dir_path)
+        t = threading.Thread(target=clone_module, args=(module, dir_path))
+        threads.append(t)
+        t.start()
 
 
 def main(is_vagrant=False,
          location='default',
          puppet_dir='/etc/puppetlabs/code/environments/'):
+
+    """
+    Where the magic happens
+    """
 
     environments = os.listdir(puppet_dir)
     for environment in environments:
