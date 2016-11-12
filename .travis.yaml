@@ -6,6 +6,9 @@ python:
   - "3.5-dev" # 3.5 development branch
   - "nightly" # currently points to 3.6-dev
 install:
+  - pip install coveralls
   - pip install -r tests/requirements.txt
 script:
   - py.test --cov=postrun tests/
+after_success:
+  coveralls
