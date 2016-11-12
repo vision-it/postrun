@@ -121,11 +121,11 @@ def load_modules(dir_path, environment='production', location='default'):
     return modules
 
 
-# TODO Test
-def deploy_hiera(hiera_dir, hiera_opt='opt/puppet/hiera'):
+def deploy_hiera(hiera_dir, hiera_opt='/opt/puppet/hiera'):
 
     shutil.rmtree(hiera_dir)
     os.symlink(hiera_opt, hiera_dir)
+
 
 # TODO Test
 def deploy_modules_vagrant(dir_path, modules, environment='production'):
@@ -136,7 +136,7 @@ def deploy_modules_vagrant(dir_path, modules, environment='production'):
 
     deploy_hiera(hiera_dir)
 
-    for module in modules.item():
+    for module in modules.items():
         module_name = module[0]
 
         if has_opt_module(module_name):

@@ -34,13 +34,13 @@ def module():
 
 
 @pytest.mark.util
-def test_clear_folder(etc_puppetlabs):
+@mock.patch('shutil.rmtree')
+@mock.patch('os.makedirs')
+def test_clear_folder(mock_mkdir, mock_rm):
 
-    open( os.path.join(etc_puppetlabs, 'foo.txt'), 'w').close()
-    assert(len(os.listdir(etc_puppetlabs)) == 1)
-
-    postrun.clear_folder(etc_puppetlabs)
-    assert(len(os.listdir(etc_puppetlabs)) == 0)
+    postrun.clear_folder('/puppet/foobar')
+    mock_rm.assert_called_once_with('/puppet/foobar')
+    mock_mkdir.assert_called_once_with('/puppet/foobar')
 
 
 @pytest.mark.util
@@ -138,11 +138,6 @@ def test_deploy_modules(mock_call, etc_puppetlabs):
     directory = os.path.dirname(os.path.realpath(__file__))
     modules = postrun.load_modules(directory, location='some_loc')
 
-    process_mock = mock.Mock()
-    attrs = {'return_value': (b'output', b'error')}
-    process_mock.configure_mock(**attrs)
-    mock_call.return_value = process_mock
-
     postrun.deploy_modules(etc_puppetlabs, modules)
 
     # Gets called with 2 modules
@@ -166,14 +161,50 @@ def test_has_opt_module_true(etc_puppetlabs):
     assert(return_val == True)
 
 
-@pytest.mark.todo
-def test_deploy_hiera():
-    pass
+@pytest.mark.util
+@mock.patch('shutil.rmtree')
+@mock.patch('os.symlink')
+def test_deploy_hiera(os_sym, mock_rm):
+
+    postrun.deploy_hiera(hiera_dir='/hiera/foobar')
+
+    mock_rm.assert_called_once_with('/hiera/foobar')
+    os_sym.assert_called_once_with('/opt/puppet/hiera', '/hiera/foobar')
 
 
-@pytest.mark.todo
-def test_deploy_modules_vagrant():
-    pass
+@pytest.mark.new
+@mock.patch('postrun.deploy_hiera')
+@mock.patch('postrun.clone_module')
+@mock.patch('os.symlink')
+def test_deploy_modules_vagrant_clone(mock_sym, mock_clone, mock_hiera):
+
+    directory = os.path.dirname(os.path.realpath(__file__))
+    modules = postrun.load_modules(directory, location='some_loc')
+
+    postrun.deploy_modules_vagrant('/foobar', modules)
+
+    mock_hiera.assert_called_once_with('/etc/puppetlabs/code/hieradata/production')
+    assert(mock_clone.call_count == 2)
+    assert(mock_sym.call_count == 0)
+
+
+@pytest.mark.new
+@mock.patch('postrun.has_opt_module')
+@mock.patch('postrun.deploy_hiera')
+@mock.patch('postrun.clone_module')
+@mock.patch('os.symlink')
+def test_deploy_modules_vagrant_sym(mock_sym, mock_clone, mock_hiera, mock_hasmod):
+
+    directory = os.path.dirname(os.path.realpath(__file__))
+    modules = postrun.load_modules(directory, location='some_loc')
+    mock_hasmod.return_value = True
+
+    postrun.deploy_modules_vagrant('/foobar', modules)
+
+    mock_hiera.assert_called_once_with('/etc/puppetlabs/code/hieradata/production')
+    assert(mock_clone.call_count == 0)
+    assert(mock_hasmod.call_count == 2)
+    assert(mock_sym.call_count == 2)
 
 
 @pytest.mark.todo
