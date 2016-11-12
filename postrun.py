@@ -8,9 +8,6 @@ import shutil
 import sys
 
 
-# TODO Make git clone multithreaded
-
-
 def git(*args):
     """
     Subprocess wrapper for git
@@ -152,7 +149,6 @@ def deploy_modules(dir_path, modules, environment='production'):
         clone_module(module, dir_path)
 
 
-# TODO Test
 def main(is_vagrant=False,
          location='default',
          puppet_dir='/etc/puppetlabs/code/environments/'):
