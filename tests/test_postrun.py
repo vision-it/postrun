@@ -83,6 +83,23 @@ def test_is_vagrant():
     assert(virtual == False)
 
 
+@pytest.mark.new
+@mock.patch('subprocess.Popen')
+def test_get_location_expect(mock_popen):
+
+    mock_popen.side_effect = KeyError('foo')
+
+    location = postrun.get_location()
+
+    mock_popen.assert_called_once_with('facter location',
+                                       close_fds=True,
+                                       shell=True,
+                                       stderr=-2,
+                                       stdin=-1,
+                                       stdout=-1)
+
+    assert(location == 'default')
+
 @pytest.mark.util
 @mock.patch('subprocess.Popen')
 def test_get_location(mock_popen):
@@ -207,7 +224,7 @@ def test_deploy_modules_vagrant_sym(mock_sym, mock_clone, mock_hiera, mock_hasmo
     assert(mock_sym.call_count == 2)
 
 
-@pytest.mark.new
+@pytest.mark.main
 @mock.patch('os.listdir')
 @mock.patch('postrun.load_modules')
 @mock.patch('postrun.clear_folder')
@@ -225,7 +242,7 @@ def test_main_regular(mock_deploy, mock_clear, mock_mods, mock_os, module):
     assert(mock_mods.call_count == 2)
 
 
-@pytest.mark.new
+@pytest.mark.main
 @mock.patch('os.listdir')
 @mock.patch('postrun.load_modules')
 @mock.patch('postrun.clear_folder')
