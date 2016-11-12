@@ -104,7 +104,7 @@ def test_get_location(mock_popen):
     assert(location == 'output')
 
 
-@pytest.mark.modules
+@pytest.mark.util
 def test_load_modules_real_env(module):
 
     expected_mod = {'other_mod': {'ref': 'master', 'url': 'https://github.com/vision-it/puppet-roles.git'}}
@@ -115,7 +115,7 @@ def test_load_modules_real_env(module):
     assert(loaded_mod == expected_mod)
 
 
-@pytest.mark.modules
+@pytest.mark.util
 def test_load_modules_no_loc(module):
 
     directory = os.path.dirname(os.path.realpath(__file__))
@@ -124,14 +124,14 @@ def test_load_modules_no_loc(module):
     assert(loaded_mod == module)
 
 
-@pytest.mark.modules
+@pytest.mark.util
 def test_load_modules_no_file():
 
     mod = postrun.load_modules('/foobar', 'staging')
     assert(mod == {})
 
 
-@pytest.mark.modules
+@pytest.mark.deploy
 @mock.patch('subprocess.check_call')
 def test_deploy_modules(mock_call, etc_puppetlabs):
 
@@ -172,7 +172,7 @@ def test_deploy_hiera(os_sym, mock_rm):
     os_sym.assert_called_once_with('/opt/puppet/hiera', '/hiera/foobar')
 
 
-@pytest.mark.new
+@pytest.mark.deploy
 @mock.patch('postrun.deploy_hiera')
 @mock.patch('postrun.clone_module')
 @mock.patch('os.symlink')
@@ -188,7 +188,7 @@ def test_deploy_modules_vagrant_clone(mock_sym, mock_clone, mock_hiera):
     assert(mock_sym.call_count == 0)
 
 
-@pytest.mark.new
+@pytest.mark.deploy
 @mock.patch('postrun.has_opt_module')
 @mock.patch('postrun.deploy_hiera')
 @mock.patch('postrun.clone_module')
@@ -207,6 +207,37 @@ def test_deploy_modules_vagrant_sym(mock_sym, mock_clone, mock_hiera, mock_hasmo
     assert(mock_sym.call_count == 2)
 
 
-@pytest.mark.todo
-def test_main():
-    pass
+@pytest.mark.new
+@mock.patch('os.listdir')
+@mock.patch('postrun.load_modules')
+@mock.patch('postrun.clear_folder')
+@mock.patch('postrun.deploy_modules')
+def test_main_regular(mock_deploy, mock_clear, mock_mods, mock_os, module):
+
+    mock_mods.return_value = module
+    mock_os.return_value = ['production', 'staging']
+
+    postrun.main(is_vagrant=False)
+
+    mock_os.assert_called_once_with('/etc/puppetlabs/code/environments/')
+    assert(mock_clear.call_count == 2)
+    assert(mock_deploy.call_count == 2)
+    assert(mock_mods.call_count == 2)
+
+
+@pytest.mark.new
+@mock.patch('os.listdir')
+@mock.patch('postrun.load_modules')
+@mock.patch('postrun.clear_folder')
+@mock.patch('postrun.deploy_modules_vagrant')
+def test_main_vagrant(mock_deploy, mock_clear, mock_mods, mock_os, module):
+
+    mock_mods.return_value = module
+    mock_os.return_value = ['production', 'staging']
+
+    postrun.main(is_vagrant=True)
+
+    mock_os.assert_called_once_with('/etc/puppetlabs/code/environments/')
+    assert(mock_clear.call_count == 2)
+    assert(mock_deploy.call_count == 2)
+    assert(mock_mods.call_count == 2)

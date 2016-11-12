@@ -127,7 +127,6 @@ def deploy_hiera(hiera_dir, hiera_opt='/opt/puppet/hiera'):
     os.symlink(hiera_opt, hiera_dir)
 
 
-# TODO Test
 def deploy_modules_vagrant(dir_path, modules, environment='production'):
 
     #TODO Flexible enough?
@@ -158,7 +157,8 @@ def main(is_vagrant=False,
          location='default',
          puppet_dir='/etc/puppetlabs/code/environments/'):
 
-    for environment in os.listdir(puppet_dir):
+    environments = os.listdir(puppet_dir)
+    for environment in environments:
 
         modules = load_modules(puppet_dir, environment, location)
         dist_dir = os.path.join(puppet_dir, environment, 'dist')
