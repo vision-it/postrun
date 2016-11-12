@@ -1,0 +1,19 @@
+---
+modules:
+  default:
+    roles:
+      url: 'https://github.com/vision-it/puppet-roles.git'
+      ref: 'production'
+
+  real_loc:
+    other_mod:
+      url: 'https://github.com/vision-it/puppet-roles.git'
+      ref: 'master'
+
+  some_loc:
+    mod1:
+      url: 'https://github.com/vision-it/puppet-roles.git'
+      ref: 'master'
+    mod2:
+      url: 'https://github.com/vision-it/puppet-roles.git'
+      ref: 'master'
