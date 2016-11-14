@@ -10,22 +10,6 @@ import unittest.mock as mock
 import postrun
 
 
-@pytest.fixture(scope='session')
-def temp_dir(tmpdir_factory):
-
-    temp_dir = tmpdir_factory.mktemp('etc')
-    return temp_dir
-
-
-@pytest.fixture(scope='session')
-def etc_puppetlabs(temp_dir):
-
-    puppetlabs_dir = os.path.join(str(temp_dir), 'puppetlabs', 'code', 'environments')
-    os.makedirs(puppetlabs_dir)
-
-    return puppetlabs_dir
-
-
 @pytest.fixture
 def module():
 
@@ -122,7 +106,7 @@ def test_get_location(mock_popen):
 
 
 @pytest.mark.util
-def test_load_modules_real_env(module):
+def test_load_modules_real_env():
 
     expected_mod = {'other_mod': {'ref': 'master', 'url': 'https://github.com/vision-it/puppet-roles.git'}}
 
@@ -150,12 +134,12 @@ def test_load_modules_no_file():
 
 @pytest.mark.deploy
 @mock.patch('subprocess.check_call')
-def test_deploy_modules(mock_call, etc_puppetlabs):
+def test_deploy_modules(mock_call):
 
     directory = os.path.dirname(os.path.realpath(__file__))
     modules = postrun.load_modules(directory, location='some_loc')
 
-    postrun.deploy_modules(etc_puppetlabs, modules)
+    postrun.deploy_modules('/foobar', modules)
 
     # Gets called with 2 modules
     # The rest should be tested in clone_module
@@ -168,13 +152,14 @@ def test_has_opt_module_false():
     return_val = postrun.has_opt_module('foobar')
     assert(return_val == False)
 
+
 @pytest.mark.util
-def test_has_opt_module_true(etc_puppetlabs):
+@mock.patch('os.path.exists')
+def test_has_opt_module_true(mock_os):
 
-    mod_dir = os.path.join(etc_puppetlabs, 'foobar')
-    os.makedirs(mod_dir)
+    mock_os.return_value = True
 
-    return_val = postrun.has_opt_module(etc_puppetlabs, 'foobar')
+    return_val = postrun.has_opt_module('/opt', 'foobar')
     assert(return_val == True)
 
 
