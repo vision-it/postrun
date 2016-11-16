@@ -105,22 +105,22 @@ def test_get_location(mock_popen):
     assert(location == 'output')
 
 
-@pytest.mark.util
+@pytest.mark.load
 def test_load_modules_real_env():
 
     expected_mod = {'other_mod': {'ref': 'master', 'url': 'https://github.com/vision-it/puppet-roles.git'}}
 
     directory = os.path.dirname(os.path.realpath(__file__))
-    loaded_mod = postrun.load_modules(directory, location='real_loc')
+    loaded_mod = postrun.load_modules(directory, environment='', location='real_loc')
 
     assert(loaded_mod == expected_mod)
 
 
-@pytest.mark.util
+@pytest.mark.load
 def test_load_modules_no_loc(module):
 
     directory = os.path.dirname(os.path.realpath(__file__))
-    loaded_mod = postrun.load_modules(directory, location='not_loc')
+    loaded_mod = postrun.load_modules(directory, environment='', location='not_loc')
 
     assert(loaded_mod == module)
 
@@ -137,7 +137,7 @@ def test_load_modules_no_file():
 def test_deploy_modules(mock_call):
 
     directory = os.path.dirname(os.path.realpath(__file__))
-    modules = postrun.load_modules(directory, location='some_loc')
+    modules = postrun.load_modules(directory, environment='', location='some_loc')
 
     postrun.deploy_modules('/foobar', modules)
 
@@ -164,7 +164,7 @@ def test_has_opt_module_true(mock_os):
 
 
 @pytest.mark.util
-@mock.patch('shutil.rmtree')
+@mock.patch('os.remove')
 @mock.patch('os.symlink')
 def test_deploy_hiera(os_sym, mock_rm):
 
@@ -181,7 +181,7 @@ def test_deploy_hiera(os_sym, mock_rm):
 def test_deploy_modules_vagrant_clone(mock_sym, mock_clone, mock_hiera):
 
     directory = os.path.dirname(os.path.realpath(__file__))
-    modules = postrun.load_modules(directory, location='some_loc')
+    modules = postrun.load_modules(directory, environment='', location='some_loc')
 
     postrun.deploy_modules_vagrant('/foobar', modules)
 
@@ -198,7 +198,7 @@ def test_deploy_modules_vagrant_clone(mock_sym, mock_clone, mock_hiera):
 def test_deploy_modules_vagrant_sym(mock_sym, mock_clone, mock_hiera, mock_hasmod):
 
     directory = os.path.dirname(os.path.realpath(__file__))
-    modules = postrun.load_modules(directory, location='some_loc')
+    modules = postrun.load_modules(directory, environment='', location='some_loc')
     mock_hasmod.return_value = True
 
     postrun.deploy_modules_vagrant('/foobar', modules)

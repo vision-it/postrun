@@ -67,9 +67,12 @@ def has_opt_module(module_name, opt_path='/opt/puppet/modules/'):
     Checks if there is there is a module in /opt
     """
 
-    module_path = os.path.join(opt_path, module_name)
+    module_path_dash = os.path.join(opt_path, module_name.replace('_', '-'))
+    module_path_underscore = os.path.join(opt_path, module_name)
 
-    return os.path.exists(module_path)
+    is_path = os.path.exists(module_path_dash) or os.path.exists(module_path_underscore)
+
+    return is_path
 
 
 def get_location():
@@ -100,7 +103,7 @@ def load_modules(dir_path, environment='production', location='default'):
     Loads the modules.yaml file
     """
 
-    modules_file = os.path.join(dir_path, 'modules.yaml')
+    modules_file = os.path.join(dir_path, environment, 'modules.yaml')
 
     if not os.path.isfile(modules_file):
         return {}
@@ -111,8 +114,8 @@ def load_modules(dir_path, environment='production', location='default'):
     try:
         modules = locations[str(location)]
     except:
-        err = 'No module configuration for {0}, use default'
-        print(err.format(environment))
+        warn = 'WARNING: No module configuration for {0}, use default'
+        print(warn.format(location))
 
         modules = locations['default']
 
@@ -124,7 +127,7 @@ def deploy_hiera(hiera_dir, hiera_opt='/opt/puppet/hiera'):
     Set the symlink for the Hiera data in Vagrant
     """
 
-    shutil.rmtree(hiera_dir)
+    os.remove(hiera_dir)
     os.symlink(hiera_opt, hiera_dir)
 
 
@@ -147,10 +150,12 @@ def deploy_modules_vagrant(dir_path,
         module_name = module[0]
 
         if has_opt_module(module_name):
+            print("INFO: Using local " + module_name)
             src = os.path.join(opt_path, module_name)
-            dst = dir_path
+            dst = os.path.join(dir_path, module_name)
             os.symlink(src, dst)
         else:
+            print("INFO: Using git " + module_name)
             t = threading.Thread(target=clone_module, args=(module, dir_path))
             threads.append(t)
             t.start()
@@ -171,22 +176,24 @@ def deploy_modules(dir_path, modules, environment='production'):
 
 def main(is_vagrant=False,
          location='default',
-         puppet_dir='/etc/puppetlabs/code/environments/'):
+         puppet_base='/etc/puppetlabs/code/environments/',
+         hiera_base='/etc/puppetlabs/code/hieradata'):
 
     """
     Where the magic happens
     """
 
-    environments = os.listdir(puppet_dir)
+    environments = os.listdir(puppet_base)
     for environment in environments:
 
-        modules = load_modules(puppet_dir, environment, location)
-        dist_dir = os.path.join(puppet_dir, environment, 'dist')
-        hiera_dir = os.path.join(puppet_dir, environment, 'dist')
-        clear_folder(puppet_dir)
+        modules = load_modules(puppet_base, environment, location)
+        dist_dir = os.path.join(puppet_base, environment, 'dist')
+        hiera_dir = os.path.join(hiera_base, environment)
+
+        clear_folder(dist_dir)
 
         if is_vagrant:
-            deploy_modules_vagrant(dist_dir, modules, environment)
+            deploy_modules_vagrant(dist_dir, modules, environment=environment)
         else:
             deploy_modules(dist_dir, modules)
 
