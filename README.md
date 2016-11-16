@@ -2,3 +2,7 @@
 
 # Postrun
 Deploys Puppet modules from modules.yaml
+
+# TODO
+* Catch git clone errors
+* Log into File and to Console
