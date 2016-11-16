@@ -243,3 +243,12 @@ def test_main_vagrant(mock_deploy, mock_clear, mock_mods, mock_os, module):
     assert(mock_clear.call_count == 2)
     assert(mock_deploy.call_count == 2)
     assert(mock_mods.call_count == 2)
+
+
+@pytest.mark.main
+@mock.patch('argparse.ArgumentParser')
+def test_commandline(mock_parser):
+
+    postrun.commandline()
+
+    assert(mock_parser.call_count == 1)

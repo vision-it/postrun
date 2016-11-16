@@ -17,7 +17,7 @@ def commandline():
 
     parser.add_argument("-v", "--verbose", help="increase output verbosity",
                     action="store_true")
-    parser.set_defaults(verbose=True)
+    parser.set_defaults(verbose=False)
 
     cmd_arguments = parser.parse_args()
 
