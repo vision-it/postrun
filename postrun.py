@@ -64,7 +64,8 @@ def is_vagrant():
 
 def has_opt_module(module_name, opt_path='/opt/puppet/modules/'):
     """
-    Checks if there is there is a module in /opt
+    Checks if there is there is a module in /opt.
+    Both with dashes and underscores in the name.
     """
 
     module_path_dash = os.path.join(opt_path, module_name.replace('_', '-'))
@@ -124,7 +125,7 @@ def load_modules(dir_path, environment='production', location='default'):
 
 def deploy_hiera(hiera_dir, hiera_opt='/opt/puppet/hiera'):
     """
-    Set the symlink for the Hiera data in Vagrant
+    Removes and sets the symlink for the Hiera data in Vagrant.
     """
 
     os.remove(hiera_dir)
@@ -180,7 +181,7 @@ def main(is_vagrant=False,
          hiera_base='/etc/puppetlabs/code/hieradata'):
 
     """
-    Where the magic happens
+    Where the magic happens.
     """
 
     environments = os.listdir(puppet_base)
