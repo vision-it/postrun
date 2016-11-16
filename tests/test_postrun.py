@@ -146,6 +146,18 @@ def test_deploy_modules(mock_call):
     )
 
 
+@mock.patch('subprocess.check_call')
+def test_deploy_modules_verbose(mock_call, capfd):
+
+    directory = os.path.dirname(os.path.realpath(__file__))
+    modules = postrun.load_modules(directory, environment='', location='some_loc')
+
+    postrun.deploy_modules('/foobar', modules, verbose=True)
+    out, err = capfd.readouterr()
+
+    assert (out == "INFO: Deploying git mod1_name\n")
+
+
 @pytest.mark.util
 def test_has_opt_module_false():
 
@@ -172,6 +184,21 @@ def test_deploy_hiera(os_sym, mock_rm):
 
     mock_rm.assert_called_once_with('/hiera/foobar')
     os_sym.assert_called_once_with('/opt/puppet/hiera', '/hiera/foobar')
+
+
+@pytest.mark.deploy
+@mock.patch('postrun.deploy_hiera')
+@mock.patch('postrun.clone_module')
+@mock.patch('os.symlink')
+def test_deploy_modules_vagrant_verbose(mock_sym, mock_clone, mock_hiera, capfd):
+
+    directory = os.path.dirname(os.path.realpath(__file__))
+    modules = postrun.load_modules(directory, environment='', location='some_loc')
+
+    postrun.deploy_modules_vagrant('/foobar', modules, verbose=True)
+    out, err = capfd.readouterr()
+
+    assert (out == "INFO: Deploying git mod1_name\n")
 
 
 @pytest.mark.deploy
@@ -208,6 +235,23 @@ def test_deploy_modules_vagrant_sym(mock_sym, mock_clone, mock_hiera, mock_hasmo
 
     assert(mock_clone.call_count == 0)
     assert(mock_hasmod.call_count == 1)
+
+
+@pytest.mark.deploy
+@mock.patch('postrun.has_opt_module')
+@mock.patch('postrun.deploy_hiera')
+@mock.patch('postrun.clone_module')
+@mock.patch('os.symlink')
+def test_deploy_modules_vagrant_sym_verbose(mock_sym, mock_clone, mock_hiera, mock_hasmod, capfd):
+
+    directory = os.path.dirname(os.path.realpath(__file__))
+    modules = postrun.load_modules(directory, environment='', location='some_loc')
+    mock_hasmod.return_value = (True, '_')
+
+    postrun.deploy_modules_vagrant('/foobar', modules, verbose=True)
+    out, err = capfd.readouterr()
+
+    assert (out == "INFO: Deploying local mod1_name\n")
 
 
 @pytest.mark.deploy
