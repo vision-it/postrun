@@ -173,7 +173,7 @@ def deploy_modules_vagrant(dir_path,
         if has_opt:
 
             if verbose:
-                print("INFO: Using local " + module_name)
+                print("INFO: Deploying local " + module_name)
 
             src = os.path.join(opt_path, module_name.replace('_', delimiter))
             dst = os.path.join(dir_path, module_name)
@@ -182,14 +182,14 @@ def deploy_modules_vagrant(dir_path,
         else:
 
             if verbose:
-                print("INFO: Using git " + module_name)
+                print("INFO: Deploying git " + module_name)
 
             t = threading.Thread(target=clone_module, args=(module, dir_path))
             threads.append(t)
             t.start()
 
 
-def deploy_modules(dir_path, modules, environment='production'):
+def deploy_modules(dir_path, modules, environment='production', verbose=False):
     """
     Deploys all modules passed via git.
     """
@@ -197,6 +197,10 @@ def deploy_modules(dir_path, modules, environment='production'):
     threads = []
 
     for module in modules.items():
+
+        if verbose:
+            print("INFO: Deploying git " + module_name)
+
         t = threading.Thread(target=clone_module, args=(module, dir_path))
         threads.append(t)
         t.start()
@@ -226,7 +230,7 @@ def main(args,
         if is_vagrant:
             deploy_modules_vagrant(dist_dir, modules, environment=environment, verbose=verbose)
         else:
-            deploy_modules(dist_dir, modules)
+            deploy_modules(dist_dir, modules, verbose=verbose)
 
 
 if __name__ == "__main__":
