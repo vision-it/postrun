@@ -197,6 +197,7 @@ def deploy_modules(dir_path, modules, environment='production', verbose=False):
     threads = []
 
     for module in modules.items():
+        module_name = str(module[0])
 
         if verbose:
             print("INFO: Deploying git " + module_name)
