@@ -148,7 +148,7 @@ def test_deploy_modules(mock_call):
 def test_has_opt_module_false():
 
     return_val = postrun.has_opt_module('foobar')
-    assert(return_val == False)
+    assert(return_val == (False, '-'))
 
 
 @pytest.mark.util
@@ -158,7 +158,7 @@ def test_has_opt_module_true(mock_os):
     mock_os.return_value = True
 
     return_val = postrun.has_opt_module('/opt', 'foobar')
-    assert(return_val == True)
+    assert(return_val == (True, '_'))
 
 
 @pytest.mark.util
@@ -197,7 +197,7 @@ def test_deploy_modules_vagrant_sym(mock_sym, mock_clone, mock_hiera, mock_hasmo
 
     directory = os.path.dirname(os.path.realpath(__file__))
     modules = postrun.load_modules(directory, environment='', location='some_loc')
-    mock_hasmod.return_value = True
+    mock_hasmod.return_value = (True, '_')
 
     postrun.deploy_modules_vagrant('/foobar', modules)
 

@@ -81,14 +81,16 @@ def has_opt_module(module_name, opt_path='/opt/puppet/modules/'):
     """
     Checks if there is there is a module in /opt.
     Both with dashes and underscores in the name.
+    Returns a boolean and the delimiter of the module folders
     """
 
     module_path_dash = os.path.join(opt_path, module_name.replace('_', '-'))
     module_path_underscore = os.path.join(opt_path, module_name)
 
     is_path = os.path.exists(module_path_dash) or os.path.exists(module_path_underscore)
+    delimiter = '_' if os.path.exists(module_path_underscore) else '-'
 
-    return is_path
+    return (is_path, delimiter)
 
 
 def get_location():
@@ -165,15 +167,16 @@ def deploy_modules_vagrant(dir_path,
     deploy_hiera(hiera_dir)
 
     for module in modules.items():
-        module_name = module[0]
+        module_name = str(module[0])
 
-        if has_opt_module(module_name):
+        has_opt, delimiter = has_opt_module(module_name)
+        if has_opt:
 
             if verbose:
                 print("INFO: Using local " + module_name)
 
             src = os.path.join(opt_path, module_name)
-            dst = os.path.join(dir_path, module_name)
+            dst = os.path.join(dir_path, module_name.replace('_', delimiter))
             os.symlink(src, dst)
 
         else:
