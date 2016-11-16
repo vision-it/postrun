@@ -43,8 +43,10 @@ def clone_module(module, target_directory):
     ref = values['ref']
     target = os.path.join(target_directory, name)
 
-    # TODO Catch errors and whatnot
-    git('clone', url, '-b', ref, target)
+    try:
+        git('clone', url, '-b', ref, target)
+    except:
+        print('ERROR: Error while cloning {0}'.format(name))
 
 
 def load_yaml(file_name):

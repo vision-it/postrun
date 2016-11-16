@@ -37,6 +37,19 @@ def test_load_yaml(module):
 
 @pytest.mark.git
 @mock.patch('subprocess.check_call')
+def test_clone_module_fail(mock_call, capfd):
+
+    mock_call.side_effect = KeyError('foo')
+    module = ('roles', {'url': 'https://github.com/vision-it/foobar.git', 'ref': 'notabranch'})
+
+    postrun.clone_module(module, '/tmp')
+    out, err = capfd.readouterr()
+
+    assert (out == "ERROR: Error while cloning roles\n")
+
+
+@pytest.mark.git
+@mock.patch('subprocess.check_call')
 def test_clone_module(mock_call):
 
     module = ('roles', {'url': 'https://github.com/vision-it/puppet-roles.git', 'ref': 'production'})
@@ -81,6 +94,7 @@ def test_get_location_expect(mock_popen):
                                        stdout=-1)
 
     assert(location == 'default')
+
 
 @pytest.mark.util
 @mock.patch('subprocess.Popen')
