@@ -175,8 +175,8 @@ def deploy_modules_vagrant(dir_path,
             if verbose:
                 print("INFO: Using local " + module_name)
 
-            src = os.path.join(opt_path, module_name)
-            dst = os.path.join(dir_path, module_name.replace('_', delimiter))
+            src = os.path.join(opt_path, module_name.replace('_', delimiter))
+            dst = os.path.join(dir_path, module_name)
             os.symlink(src, dst)
 
         else:

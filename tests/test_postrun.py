@@ -139,9 +139,11 @@ def test_deploy_modules(mock_call):
 
     postrun.deploy_modules('/foobar', modules)
 
-    # Gets called with 2 modules
-    # The rest should be tested in clone_module
-    assert(mock_call.call_count == 2)
+    mock_call.assert_called_once_with(
+        ['git', 'clone', 'https://github.com/vision-it/puppet-roles.git', '-b', 'master', '/foobar/mod1_name'],
+        stderr=-1,
+        stdout=-1
+    )
 
 
 @pytest.mark.util
@@ -184,7 +186,7 @@ def test_deploy_modules_vagrant_clone(mock_sym, mock_clone, mock_hiera):
     postrun.deploy_modules_vagrant('/foobar', modules)
 
     mock_hiera.assert_called_once_with('/etc/puppetlabs/code/hieradata/production')
-    assert(mock_clone.call_count == 2)
+    assert(mock_clone.call_count == 1)
     assert(mock_sym.call_count == 0)
 
 
@@ -202,9 +204,30 @@ def test_deploy_modules_vagrant_sym(mock_sym, mock_clone, mock_hiera, mock_hasmo
     postrun.deploy_modules_vagrant('/foobar', modules)
 
     mock_hiera.assert_called_once_with('/etc/puppetlabs/code/hieradata/production')
+    mock_sym.assert_called_once_with('/opt/puppet/modules/mod1_name', '/foobar/mod1_name')
+
     assert(mock_clone.call_count == 0)
-    assert(mock_hasmod.call_count == 2)
-    assert(mock_sym.call_count == 2)
+    assert(mock_hasmod.call_count == 1)
+
+
+@pytest.mark.deploy
+@mock.patch('postrun.has_opt_module')
+@mock.patch('postrun.deploy_hiera')
+@mock.patch('postrun.clone_module')
+@mock.patch('os.symlink')
+def test_deploy_modules_vagrant_sym_dash(mock_sym, mock_clone, mock_hiera, mock_hasmod):
+
+    directory = os.path.dirname(os.path.realpath(__file__))
+    modules = postrun.load_modules(directory, environment='', location='some_loc')
+    mock_hasmod.return_value = (True, '-')
+
+    postrun.deploy_modules_vagrant('/foobar', modules)
+
+    mock_hiera.assert_called_once_with('/etc/puppetlabs/code/hieradata/production')
+    mock_sym.assert_called_once_with('/opt/puppet/modules/mod1-name', '/foobar/mod1_name')
+
+    assert(mock_clone.call_count == 0)
+    assert(mock_hasmod.call_count == 1)
 
 
 @pytest.mark.main
@@ -250,5 +273,4 @@ def test_main_vagrant(mock_deploy, mock_clear, mock_mods, mock_os, module):
 def test_commandline(mock_parser):
 
     postrun.commandline()
-
     assert(mock_parser.call_count == 1)
