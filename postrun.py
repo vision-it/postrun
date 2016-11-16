@@ -1,12 +1,27 @@
 #!/usr/bin/env python3
 
 
+import argparse
+import logging
 import os
 import shutil
 import subprocess
 import sys
 import threading
 import yaml
+
+
+def commandline():
+
+    parser = argparse.ArgumentParser(description='Postrun script to deploy Puppet modules via git or locally')
+
+    parser.add_argument("-v", "--verbose", help="increase output verbosity",
+                    action="store_true")
+    parser.set_defaults(verbose=True)
+
+    cmd_arguments = parser.parse_args()
+
+    return cmd_arguments
 
 
 def git(*args):
@@ -115,10 +130,11 @@ def load_modules(dir_path, environment='production', location='default'):
     try:
         modules = locations[str(location)]
     except:
+        modules = locations['default']
+
         warn = 'WARNING: No module configuration for {0}, use default'
         print(warn.format(location))
 
-        modules = locations['default']
 
     return modules
 
@@ -136,7 +152,8 @@ def deploy_modules_vagrant(dir_path,
                            modules,
                            hiera_path='/etc/puppetlabs/code/hieradata',
                            opt_path='/opt/puppet/modules',
-                           environment='production'):
+                           environment='production',
+                           verbose=False):
     """
     Deploys all modules in a Vagrant installation.
     Uses symlinks for modules present in /opt
@@ -151,12 +168,19 @@ def deploy_modules_vagrant(dir_path,
         module_name = module[0]
 
         if has_opt_module(module_name):
-            print("INFO: Using local " + module_name)
+
+            if verbose:
+                print("INFO: Using local " + module_name)
+
             src = os.path.join(opt_path, module_name)
             dst = os.path.join(dir_path, module_name)
             os.symlink(src, dst)
+
         else:
-            print("INFO: Using git " + module_name)
+
+            if verbose:
+                print("INFO: Using git " + module_name)
+
             t = threading.Thread(target=clone_module, args=(module, dir_path))
             threads.append(t)
             t.start()
@@ -175,14 +199,17 @@ def deploy_modules(dir_path, modules, environment='production'):
         t.start()
 
 
-def main(is_vagrant=False,
+def main(args,
+         is_vagrant=False,
          location='default',
          puppet_base='/etc/puppetlabs/code/environments/',
-         hiera_base='/etc/puppetlabs/code/hieradata'):
+         hiera_base='/etc/puppetlabs/code/hieradata',):
 
     """
     Where the magic happens.
     """
+
+    verbose = args.verbose
 
     environments = os.listdir(puppet_base)
     for environment in environments:
@@ -194,14 +221,15 @@ def main(is_vagrant=False,
         clear_folder(dist_dir)
 
         if is_vagrant:
-            deploy_modules_vagrant(dist_dir, modules, environment=environment)
+            deploy_modules_vagrant(dist_dir, modules, environment=environment, verbose=verbose)
         else:
             deploy_modules(dist_dir, modules)
 
 
 if __name__ == "__main__":
 
+    args = commandline()
     is_vagrant = is_vagrant()
     location = get_location()
 
-    main(is_vagrant, location)
+    main(args, is_vagrant, location)

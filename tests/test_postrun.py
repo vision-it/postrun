@@ -3,8 +3,6 @@
 
 import pytest
 import os
-import tempfile
-import subprocess
 import unittest.mock as mock
 
 import postrun
@@ -218,8 +216,9 @@ def test_main_regular(mock_deploy, mock_clear, mock_mods, mock_os, module):
 
     mock_mods.return_value = module
     mock_os.return_value = ['production', 'staging']
+    mock_args = mock.MagicMock()
 
-    postrun.main(is_vagrant=False)
+    postrun.main(args=mock_args, is_vagrant=False)
 
     mock_os.assert_called_once_with('/etc/puppetlabs/code/environments/')
     assert(mock_clear.call_count == 2)
@@ -236,8 +235,9 @@ def test_main_vagrant(mock_deploy, mock_clear, mock_mods, mock_os, module):
 
     mock_mods.return_value = module
     mock_os.return_value = ['production', 'staging']
+    mock_args = mock.MagicMock()
 
-    postrun.main(is_vagrant=True)
+    postrun.main(args=mock_args, is_vagrant=True)
 
     mock_os.assert_called_once_with('/etc/puppetlabs/code/environments/')
     assert(mock_clear.call_count == 2)
