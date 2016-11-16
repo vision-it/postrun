@@ -8,6 +8,14 @@ import unittest.mock as mock
 import postrun
 
 
+@pytest.fixture(scope='session')
+def mock_logger():
+
+    return postrun.Logger(log_format='[%(levelname)s]: %(message)s',
+                          log_file='/tmp/pytest-postrun.log',
+                          verbose=True)
+
+
 @pytest.fixture
 def module():
 
@@ -37,29 +45,34 @@ def test_load_yaml(module):
 
 @pytest.mark.git
 @mock.patch('subprocess.check_call')
-def test_clone_module_fail(mock_call, capfd):
+def test_clone_module_fail(mock_call, mock_logger, capfd):
 
     mock_call.side_effect = KeyError('foo')
-    module = ('roles', {'url': 'https://github.com/vision-it/foobar.git', 'ref': 'notabranch'})
+    module = ('roles',
+              {'url': 'https://github.com/vision-it/foobar.git', 'ref': 'notabranch'})
 
-    postrun.clone_module(module, '/tmp')
+    postrun.clone_module(module, '/tmp', mock_logger)
     out, err = capfd.readouterr()
 
-    assert (out == "ERROR: Error while cloning roles\n")
+    assert(out == '[ERROR]: Error while cloning roles\n')
+
 
 
 @pytest.mark.git
 @mock.patch('subprocess.check_call')
 def test_clone_module(mock_call):
 
-    module = ('roles', {'url': 'https://github.com/vision-it/puppet-roles.git', 'ref': 'production'})
+    mock_logger = mock.MagicMock()
+
+    module = ('roles',
+              {'url': 'https://github.com/vision-it/puppet-roles.git', 'ref': 'production'})
 
     process_mock = mock.Mock()
     attrs = {'return_value': (b'output', b'error')}
     process_mock.configure_mock(**attrs)
     mock_call.return_value = process_mock
 
-    postrun.clone_module(module, '/foobar')
+    postrun.clone_module(module, '/foobar', mock_logger)
 
     mock_call.assert_called_once_with(['git',
                                        'clone',
@@ -120,10 +133,15 @@ def test_get_location(mock_popen):
 @pytest.mark.load
 def test_load_modules_real_env():
 
-    expected_mod = {'other_mod': {'ref': 'master', 'url': 'https://github.com/vision-it/puppet-roles.git'}}
+    mock_logger = mock.MagicMock()
+    expected_mod = {'other_mod':
+                    {'ref': 'master', 'url': 'https://github.com/vision-it/puppet-roles.git'}}
 
     directory = os.path.dirname(os.path.realpath(__file__))
-    loaded_mod = postrun.load_modules(directory, environment='', location='real_loc')
+    loaded_mod = postrun.load_modules(directory,
+                                      mock_logger,
+                                      environment='',
+                                      location='real_loc')
 
     assert(loaded_mod == expected_mod)
 
@@ -131,16 +149,21 @@ def test_load_modules_real_env():
 @pytest.mark.load
 def test_load_modules_no_loc(module):
 
+    mock_logger = mock.MagicMock()
     directory = os.path.dirname(os.path.realpath(__file__))
-    loaded_mod = postrun.load_modules(directory, environment='', location='not_loc')
+    loaded_mod = postrun.load_modules(directory,
+                                      mock_logger,
+                                      environment='',
+                                      location='not_loc')
 
     assert(loaded_mod == module)
 
 
-@pytest.mark.util
+@pytest.mark.load
 def test_load_modules_no_file():
 
-    mod = postrun.load_modules('/foobar', 'staging')
+    mock_logger = mock.MagicMock()
+    mod = postrun.load_modules('/foobar', mock_logger, 'staging')
     assert(mod == {})
 
 
@@ -148,10 +171,14 @@ def test_load_modules_no_file():
 @mock.patch('subprocess.check_call')
 def test_deploy_modules(mock_call):
 
+    mock_logger = mock.MagicMock()
     directory = os.path.dirname(os.path.realpath(__file__))
-    modules = postrun.load_modules(directory, environment='', location='some_loc')
+    modules = postrun.load_modules(directory,
+                                   mock_logger,
+                                   environment='',
+                                   location='some_loc')
 
-    postrun.deploy_modules('/foobar', modules)
+    postrun.deploy_modules('/foobar', modules, mock_logger)
 
     mock_call.assert_called_once_with(
         ['git', 'clone', 'https://github.com/vision-it/puppet-roles.git', '-b', 'master', '/foobar/mod1_name'],
@@ -160,16 +187,20 @@ def test_deploy_modules(mock_call):
     )
 
 
+@pytest.mark.deploy
 @mock.patch('subprocess.check_call')
-def test_deploy_modules_verbose(mock_call, capfd):
+def test_deploy_modules_verbose(mock_call, mock_logger, capfd):
 
     directory = os.path.dirname(os.path.realpath(__file__))
-    modules = postrun.load_modules(directory, environment='', location='some_loc')
+    modules = postrun.load_modules(directory,
+                                   mock_logger,
+                                   environment='',
+                                   location='some_loc')
 
-    postrun.deploy_modules('/foobar', modules, verbose=True)
+    postrun.deploy_modules('/foobar', modules, mock_logger)
     out, err = capfd.readouterr()
 
-    assert (out == "INFO: Deploying git mod1_name\n")
+    assert (out == '[DEBUG]: Deploying git mod1_name\n')
 
 
 @pytest.mark.util
@@ -204,15 +235,15 @@ def test_deploy_hiera(os_sym, mock_rm):
 @mock.patch('postrun.deploy_hiera')
 @mock.patch('postrun.clone_module')
 @mock.patch('os.symlink')
-def test_deploy_modules_vagrant_verbose(mock_sym, mock_clone, mock_hiera, capfd):
+def test_deploy_modules_vagrant_verbose(mock_sym, mock_clone, mock_hiera, mock_logger, capfd):
 
     directory = os.path.dirname(os.path.realpath(__file__))
-    modules = postrun.load_modules(directory, environment='', location='some_loc')
+    modules = postrun.load_modules(directory, mock_logger,  environment='', location='some_loc')
 
-    postrun.deploy_modules_vagrant('/foobar', modules, verbose=True)
+    postrun.deploy_modules_vagrant('/foobar', modules, mock_logger)
     out, err = capfd.readouterr()
 
-    assert (out == "INFO: Deploying git mod1_name\n")
+    assert (out == "[DEBUG]: Deploying git mod1_name\n")
 
 
 @pytest.mark.deploy
@@ -221,10 +252,12 @@ def test_deploy_modules_vagrant_verbose(mock_sym, mock_clone, mock_hiera, capfd)
 @mock.patch('os.symlink')
 def test_deploy_modules_vagrant_clone(mock_sym, mock_clone, mock_hiera):
 
-    directory = os.path.dirname(os.path.realpath(__file__))
-    modules = postrun.load_modules(directory, environment='', location='some_loc')
+    mock_logger = mock.MagicMock()
 
-    postrun.deploy_modules_vagrant('/foobar', modules)
+    directory = os.path.dirname(os.path.realpath(__file__))
+    modules = postrun.load_modules(directory, mock_logger, environment='', location='some_loc')
+
+    postrun.deploy_modules_vagrant('/foobar', modules, mock_logger)
 
     mock_hiera.assert_called_once_with('/etc/puppetlabs/code/hieradata/production')
     assert(mock_clone.call_count == 1)
@@ -238,11 +271,13 @@ def test_deploy_modules_vagrant_clone(mock_sym, mock_clone, mock_hiera):
 @mock.patch('os.symlink')
 def test_deploy_modules_vagrant_sym(mock_sym, mock_clone, mock_hiera, mock_hasmod):
 
+    mock_logger = mock.MagicMock()
+
     directory = os.path.dirname(os.path.realpath(__file__))
-    modules = postrun.load_modules(directory, environment='', location='some_loc')
+    modules = postrun.load_modules(directory, mock_logger, environment='', location='some_loc')
     mock_hasmod.return_value = (True, '_')
 
-    postrun.deploy_modules_vagrant('/foobar', modules)
+    postrun.deploy_modules_vagrant('/foobar', modules, mock_logger)
 
     mock_hiera.assert_called_once_with('/etc/puppetlabs/code/hieradata/production')
     mock_sym.assert_called_once_with('/opt/puppet/modules/mod1_name', '/foobar/mod1_name')
@@ -256,16 +291,16 @@ def test_deploy_modules_vagrant_sym(mock_sym, mock_clone, mock_hiera, mock_hasmo
 @mock.patch('postrun.deploy_hiera')
 @mock.patch('postrun.clone_module')
 @mock.patch('os.symlink')
-def test_deploy_modules_vagrant_sym_verbose(mock_sym, mock_clone, mock_hiera, mock_hasmod, capfd):
+def test_deploy_modules_vagrant_sym_verbose(mock_sym, mock_clone, mock_hiera, mock_hasmod, mock_logger, capfd):
 
     directory = os.path.dirname(os.path.realpath(__file__))
-    modules = postrun.load_modules(directory, environment='', location='some_loc')
+    modules = postrun.load_modules(directory, mock_logger, environment='', location='some_loc')
     mock_hasmod.return_value = (True, '_')
 
-    postrun.deploy_modules_vagrant('/foobar', modules, verbose=True)
+    postrun.deploy_modules_vagrant('/foobar', modules, mock_logger)
     out, err = capfd.readouterr()
 
-    assert (out == "INFO: Deploying local mod1_name\n")
+    assert (out == "[DEBUG]: Deploying local mod1_name\n")
 
 
 @pytest.mark.deploy
@@ -275,11 +310,12 @@ def test_deploy_modules_vagrant_sym_verbose(mock_sym, mock_clone, mock_hiera, mo
 @mock.patch('os.symlink')
 def test_deploy_modules_vagrant_sym_dash(mock_sym, mock_clone, mock_hiera, mock_hasmod):
 
+    mock_logger = mock.MagicMock()
     directory = os.path.dirname(os.path.realpath(__file__))
-    modules = postrun.load_modules(directory, environment='', location='some_loc')
+    modules = postrun.load_modules(directory, mock_logger, environment='', location='some_loc')
     mock_hasmod.return_value = (True, '-')
 
-    postrun.deploy_modules_vagrant('/foobar', modules)
+    postrun.deploy_modules_vagrant('/foobar', modules, mock_logger)
 
     mock_hiera.assert_called_once_with('/etc/puppetlabs/code/hieradata/production')
     mock_sym.assert_called_once_with('/opt/puppet/modules/mod1-name', '/foobar/mod1_name')

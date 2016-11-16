@@ -11,6 +11,28 @@ import threading
 import yaml
 
 
+def Logger(log_format='%(asctime)s [%(levelname)s]: %(message)s',
+           log_file='postrun.log',
+           verbose=False):
+
+    log = logging.getLogger(__name__)
+    formatter = logging.Formatter(log_format)
+
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.setFormatter(formatter)
+
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setFormatter(formatter)
+
+    log.addHandler(stdout_handler)
+    log.addHandler(file_handler)
+
+    if verbose:
+        log.setLevel(logging.DEBUG)
+
+    return log
+
+
 def commandline():
 
     parser = argparse.ArgumentParser(description='Postrun script to deploy Puppet modules via git or locally')
@@ -32,7 +54,7 @@ def git(*args):
     return subprocess.check_call(['git'] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
-def clone_module(module, target_directory):
+def clone_module(module, target_directory, log):
     """
     Clones a git repository.
     Used to get each module.
@@ -46,7 +68,7 @@ def clone_module(module, target_directory):
     try:
         git('clone', url, '-b', ref, target)
     except:
-        print('ERROR: Error while cloning {0}'.format(name))
+        log.error('Error while cloning {0}'.format(name))
 
 
 def load_yaml(file_name):
@@ -118,7 +140,7 @@ def get_location():
     return location
 
 
-def load_modules(dir_path, environment='production', location='default'):
+def load_modules(dir_path, log, environment='production', location='default'):
     """
     Loads the modules.yaml file
     """
@@ -135,10 +157,7 @@ def load_modules(dir_path, environment='production', location='default'):
         modules = locations[str(location)]
     except:
         modules = locations['default']
-
-        warn = 'WARNING: No module configuration for {0}, use default'
-        print(warn.format(location))
-
+        log.warn('WARNING: No module configuration for {0}, use default'.format(location))
 
     return modules
 
@@ -154,10 +173,10 @@ def deploy_hiera(hiera_dir, hiera_opt='/opt/puppet/hiera'):
 
 def deploy_modules_vagrant(dir_path,
                            modules,
+                           log,
                            hiera_path='/etc/puppetlabs/code/hieradata',
                            opt_path='/opt/puppet/modules',
-                           environment='production',
-                           verbose=False):
+                           environment='production'):
     """
     Deploys all modules in a Vagrant installation.
     Uses symlinks for modules present in /opt
@@ -170,28 +189,24 @@ def deploy_modules_vagrant(dir_path,
 
     for module in modules.items():
         module_name = str(module[0])
-
         has_opt, delimiter = has_opt_module(module_name)
-        if has_opt:
 
-            if verbose:
-                print("INFO: Deploying local " + module_name)
+        if has_opt:
+            log.debug('Deploying local ' + module_name)
 
             src = os.path.join(opt_path, module_name.replace('_', delimiter))
             dst = os.path.join(dir_path, module_name)
             os.symlink(src, dst)
 
         else:
+            log.debug('Deploying git ' + module_name)
 
-            if verbose:
-                print("INFO: Deploying git " + module_name)
-
-            t = threading.Thread(target=clone_module, args=(module, dir_path))
+            t = threading.Thread(target=clone_module, args=(module, dir_path, log))
             threads.append(t)
             t.start()
 
 
-def deploy_modules(dir_path, modules, environment='production', verbose=False):
+def deploy_modules(dir_path, modules, log, environment='production'):
     """
     Deploys all modules passed via git.
     """
@@ -200,11 +215,9 @@ def deploy_modules(dir_path, modules, environment='production', verbose=False):
 
     for module in modules.items():
         module_name = str(module[0])
+        log.debug('Deploying git ' + module_name)
 
-        if verbose:
-            print("INFO: Deploying git " + module_name)
-
-        t = threading.Thread(target=clone_module, args=(module, dir_path))
+        t = threading.Thread(target=clone_module, args=(module, dir_path, log))
         threads.append(t)
         t.start()
 
@@ -219,21 +232,21 @@ def main(args,
     Where the magic happens.
     """
 
-    verbose = args.verbose
-
+    logger = Logger(verbose=args.verbose)
     environments = os.listdir(puppet_base)
+
     for environment in environments:
 
-        modules = load_modules(puppet_base, environment, location)
+        modules = load_modules(puppet_base, environment, location, log=logger)
         dist_dir = os.path.join(puppet_base, environment, 'dist')
         hiera_dir = os.path.join(hiera_base, environment)
 
         clear_folder(dist_dir)
 
         if is_vagrant:
-            deploy_modules_vagrant(dist_dir, modules, environment=environment, verbose=verbose)
+            deploy_modules_vagrant(dist_dir, modules, environment=environment, log=logger)
         else:
-            deploy_modules(dist_dir, modules, verbose=verbose)
+            deploy_modules(dist_dir, modules, log=logger)
 
 
 if __name__ == "__main__":

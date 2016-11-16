@@ -5,6 +5,7 @@
 
 #Custom
 config/my-*
+postrun.log
 
 #Python Defaults
 
