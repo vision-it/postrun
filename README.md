@@ -38,3 +38,20 @@ Running the postrun script verbose:
 ## Logging
 
 The script writes all messages to stdout and into a logfile */var/log/postrun.log*.
+
+# Testing and Development
+
+Installing requirements:
+```python
+pip install -r tests/requirements.txt
+```
+
+Running tests:
+```python
+py.test
+```
+
+Running tests with coverage:
+```python
+py.test --cov=postrun tests/
+```
