@@ -57,6 +57,33 @@ def test_clone_module_fail(mock_call, mock_logger, capfd):
     assert(out == '[ERROR]: Error while cloning roles\n')
 
 
+@pytest.mark.util
+def test_has_opt_module_false():
+
+    return_val = postrun.has_opt_module('foobar')
+    assert(return_val == (False, '-'))
+
+
+@pytest.mark.util
+@mock.patch('os.path.exists')
+def test_has_opt_module_true(mock_os):
+
+    mock_os.return_value = True
+
+    return_val = postrun.has_opt_module('/opt', 'foobar')
+    assert(return_val == (True, '_'))
+
+
+@pytest.mark.util
+@mock.patch('os.remove')
+@mock.patch('os.symlink')
+def test_deploy_hiera(os_sym, mock_rm):
+
+    postrun.deploy_hiera(hiera_dir='/hiera/foobar')
+
+    mock_rm.assert_called_once_with('/hiera/foobar')
+    os_sym.assert_called_once_with('/opt/puppet/hiera', '/hiera/foobar')
+
 
 @pytest.mark.git
 @mock.patch('subprocess.check_call')
@@ -91,9 +118,9 @@ def test_is_vagrant():
     assert(virtual == False)
 
 
-@pytest.mark.new
+@pytest.mark.util
 @mock.patch('subprocess.Popen')
-def test_get_location_expect(mock_popen):
+def test_get_location_exception(mock_popen):
 
     mock_popen.side_effect = KeyError('foo')
 
@@ -130,7 +157,7 @@ def test_get_location(mock_popen):
     assert(location == 'output')
 
 
-@pytest.mark.load
+@pytest.mark.modules
 def test_load_modules_real_env():
 
     mock_logger = mock.MagicMock()
@@ -146,25 +173,29 @@ def test_load_modules_real_env():
     assert(loaded_mod == expected_mod)
 
 
-@pytest.mark.load
-def test_load_modules_no_loc(module):
+@pytest.mark.modules
+def test_load_modules_no_loc(module, mock_logger, capfd):
 
-    mock_logger = mock.MagicMock()
     directory = os.path.dirname(os.path.realpath(__file__))
     loaded_mod = postrun.load_modules(directory,
                                       mock_logger,
                                       environment='',
                                       location='not_loc')
 
+    out, err = capfd.readouterr()
+
     assert(loaded_mod == module)
+    assert (out == '[WARNING]: No module configuration for not_loc, use default\n')
 
 
-@pytest.mark.load
-def test_load_modules_no_file():
+@pytest.mark.modules
+def test_load_modules_no_file(mock_logger, capfd):
 
-    mock_logger = mock.MagicMock()
     mod = postrun.load_modules('/foobar', mock_logger, 'staging')
+    out, err = capfd.readouterr()
+
     assert(mod == {})
+    assert (out == '[ERROR]: No modules.yaml found for staging\n')
 
 
 @pytest.mark.deploy
@@ -201,34 +232,6 @@ def test_deploy_modules_verbose(mock_call, mock_logger, capfd):
     out, err = capfd.readouterr()
 
     assert (out == '[DEBUG]: Deploying git mod1_name\n')
-
-
-@pytest.mark.util
-def test_has_opt_module_false():
-
-    return_val = postrun.has_opt_module('foobar')
-    assert(return_val == (False, '-'))
-
-
-@pytest.mark.util
-@mock.patch('os.path.exists')
-def test_has_opt_module_true(mock_os):
-
-    mock_os.return_value = True
-
-    return_val = postrun.has_opt_module('/opt', 'foobar')
-    assert(return_val == (True, '_'))
-
-
-@pytest.mark.util
-@mock.patch('os.remove')
-@mock.patch('os.symlink')
-def test_deploy_hiera(os_sym, mock_rm):
-
-    postrun.deploy_hiera(hiera_dir='/hiera/foobar')
-
-    mock_rm.assert_called_once_with('/hiera/foobar')
-    os_sym.assert_called_once_with('/opt/puppet/hiera', '/hiera/foobar')
 
 
 @pytest.mark.deploy
