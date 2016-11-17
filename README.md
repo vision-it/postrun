@@ -42,16 +42,16 @@ The script writes all messages to stdout and into a logfile */var/log/postrun.lo
 # Testing and Development
 
 Installing requirements:
-```python
+```bash
 pip install -r tests/requirements.txt
 ```
 
 Running tests:
-```python
+```bash
 py.test
 ```
 
 Running tests with coverage:
-```python
+```bash
 py.test --cov=postrun tests/
 ```
