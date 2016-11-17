@@ -12,7 +12,7 @@ import yaml
 
 
 def Logger(log_format='%(asctime)s [%(levelname)s]: %(message)s',
-           log_file='postrun.log',
+           log_file='/var/log/postrun.log',
            verbose=False):
     """
     Settings for the logging. Logs are printed to stdout and into a file.

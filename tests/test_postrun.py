@@ -332,7 +332,8 @@ def test_deploy_modules_vagrant_sym_dash(mock_sym, mock_clone, mock_hiera, mock_
 @mock.patch('postrun.load_modules')
 @mock.patch('postrun.clear_folder')
 @mock.patch('postrun.deploy_modules')
-def test_main_regular(mock_deploy, mock_clear, mock_mods, mock_os, module):
+@mock.patch('postrun.Logger')
+def test_main_regular(mock_log, mock_deploy, mock_clear, mock_mods, mock_os, module):
 
     mock_mods.return_value = module
     mock_os.return_value = ['production', 'staging']
@@ -344,6 +345,7 @@ def test_main_regular(mock_deploy, mock_clear, mock_mods, mock_os, module):
     assert(mock_clear.call_count == 2)
     assert(mock_deploy.call_count == 2)
     assert(mock_mods.call_count == 2)
+    assert(mock_log.call_count == 1)
 
 
 @pytest.mark.main
@@ -351,7 +353,8 @@ def test_main_regular(mock_deploy, mock_clear, mock_mods, mock_os, module):
 @mock.patch('postrun.load_modules')
 @mock.patch('postrun.clear_folder')
 @mock.patch('postrun.deploy_modules_vagrant')
-def test_main_vagrant(mock_deploy, mock_clear, mock_mods, mock_os, module):
+@mock.patch('postrun.Logger')
+def test_main_vagrant(mock_log, mock_deploy, mock_clear, mock_mods, mock_os, module):
 
     mock_mods.return_value = module
     mock_os.return_value = ['production', 'staging']
@@ -363,6 +366,7 @@ def test_main_vagrant(mock_deploy, mock_clear, mock_mods, mock_os, module):
     assert(mock_clear.call_count == 2)
     assert(mock_deploy.call_count == 2)
     assert(mock_mods.call_count == 2)
+    assert(mock_log.call_count == 1)
 
 
 @pytest.mark.main
