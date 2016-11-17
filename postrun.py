@@ -176,7 +176,11 @@ def deploy_hiera(hiera_dir, hiera_opt='/opt/puppet/hiera'):
     Removes and sets the symlink for the Hiera data in Vagrant.
     """
 
-    os.remove(hiera_dir)
+    if os.path.islink(hiera_dir):
+        os.remove(hiera_dir)
+    else:
+        shutil.rmtree(hiera_dir)
+
     os.symlink(hiera_opt, hiera_dir)
 
 

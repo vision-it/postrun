@@ -74,15 +74,34 @@ def test_has_opt_module_true(mock_os):
     assert(return_val == (True, '_'))
 
 
-@pytest.mark.util
-@mock.patch('os.remove')
+@pytest.mark.hiera
 @mock.patch('os.symlink')
-def test_deploy_hiera(os_sym, mock_rm):
+@mock.patch('os.remove')
+@mock.patch('shutil.rmtree')
+def test_deploy_hiera_with_folder(mock_rmtree, mock_remove, mock_sym):
 
-    postrun.deploy_hiera(hiera_dir='/hiera/foobar')
+    postrun.deploy_hiera(hiera_dir='/hiera/foobar/folder')
 
-    mock_rm.assert_called_once_with('/hiera/foobar')
-    os_sym.assert_called_once_with('/opt/puppet/hiera', '/hiera/foobar')
+    mock_rmtree.assert_called_once_with('/hiera/foobar/folder')
+    assert(mock_remove.call_count == 0)
+
+    mock_sym.assert_called_once_with('/opt/puppet/hiera', '/hiera/foobar/folder')
+
+
+@pytest.mark.hiera
+@mock.patch('os.path.islink')
+@mock.patch('os.symlink')
+@mock.patch('os.remove')
+@mock.patch('shutil.rmtree')
+def test_deploy_hiera_with_sym(mock_rmtree, mock_remove, mock_sym, mock_islink):
+
+    mock_islink.return_value = True
+    postrun.deploy_hiera(hiera_dir='/hiera/foobar/symlink')
+
+    mock_remove.assert_called_once_with('/hiera/foobar/symlink')
+    assert(mock_rmtree.call_count == 0)
+
+    mock_sym.assert_called_once_with('/opt/puppet/hiera', '/hiera/foobar/symlink')
 
 
 @pytest.mark.git
