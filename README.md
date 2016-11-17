@@ -37,4 +37,4 @@ Running the postrun script verbose:
 
 ## Logging
 
-The script writes all messages to stdout and into a logfile *postrun.log* in the same directory as the script.
+The script writes all messages to stdout and into a logfile */var/log/postrun.log*.
