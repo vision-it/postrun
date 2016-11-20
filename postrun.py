@@ -59,7 +59,7 @@ def git(*args):
     Subprocess wrapper for git
     """
 
-    return subprocess.check_call(['git'] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return subprocess.check_call(['git'] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5)
 
 
 def clone_module(module, target_directory, log):
