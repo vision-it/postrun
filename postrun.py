@@ -57,9 +57,11 @@ def commandline():
 def git(*args):
     """
     Subprocess wrapper for git
+    A timeout is set to terminate the process if to response is received.
+    For example when the git link is wrong.
     """
 
-    return subprocess.check_call(['git'] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5)
+    return subprocess.check_call(['git'] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
 
 
 def clone_module(module, target_directory, log):

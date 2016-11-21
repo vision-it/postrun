@@ -128,7 +128,7 @@ def test_clone_module(mock_call):
                                        '/foobar/roles'],
                                       stderr=-1,
                                       stdout=-1,
-                                      timeout=5)
+                                      timeout=20)
 
 
 @pytest.mark.util
@@ -235,7 +235,7 @@ def test_deploy_modules(mock_call):
         ['git', 'clone', 'https://github.com/vision-it/puppet-roles.git', '-b', 'master', '/foobar/mod1_name'],
         stderr=-1,
         stdout=-1,
-        timeout=5
+        timeout=20
     )
 
 
