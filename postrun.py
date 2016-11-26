@@ -11,6 +11,18 @@ import threading
 import yaml
 
 
+def threaded(func):
+
+    def run(*args, **kwargs):
+
+        thread = threading.Thread(target=func, args=args, kwargs=kwargs)
+        thread.start()
+
+        return thread
+
+    return run
+
+
 def Logger(log_format='%(asctime)s [%(levelname)s]: %(message)s',
            log_file='/var/log/postrun.log',
            verbose=False):
@@ -49,7 +61,10 @@ def commandline(args):
                         help="increase output verbosity",
                         action="store_true")
 
-    parser.set_defaults(verbose=False)
+    parser.add_argument("-m", "--module",
+                        help="Name of the module to deploy")
+
+    parser.set_defaults(verbose=False, module='all')
 
     return parser.parse_args(args)
 
@@ -64,6 +79,7 @@ def git(*args):
     return subprocess.check_call(['git'] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
 
 
+@threaded
 def clone_module(module, target_directory, logger):
     """
     Clones a git repository.
@@ -150,13 +166,13 @@ def get_location():
     return location
 
 
-def load_modules(dir_path, logger, environment='production', location='default'):
+# TODO Function is maybe to big
+def load_modules(dir_path, logger, environment='production', location='default', module_to_load='all'):
     """
     Loads the modules.yaml file
     """
 
     modules_file = os.path.join(dir_path, environment, 'modules.yaml')
-
     if not os.path.isfile(modules_file):
         logger.error('No modules.yaml found for {0}'.format(environment))
         return {}
@@ -169,6 +185,14 @@ def load_modules(dir_path, logger, environment='production', location='default')
     except:
         logger.warn('No module configuration for {0}, use default'.format(location))
         modules = locations['default']
+
+
+    if module_to_load != 'all':
+        try:
+            modules = {module_to_load: modules[module_to_load]}
+        except:
+            logger.error('{0} not found in modules.yaml'.format(module_to_load))
+            return {}
 
     return modules
 
@@ -197,7 +221,6 @@ def deploy_modules_vagrant(dir_path,
     Uses symlinks for modules present in /opt
     """
 
-    threads = []
     hiera_dir = os.path.join(hiera_path, environment)
 
     clear_folder(dir_path)
@@ -216,30 +239,22 @@ def deploy_modules_vagrant(dir_path,
 
         else:
             logger.debug('Deploying git {0}'.format(module_name))
-
-            t = threading.Thread(target=clone_module, args=(module, dir_path, logger))
-            threads.append(t)
-            t.start()
+            clone_module(module, dir_path, logger)
 
 
-def deploy_modules(dir_path, modules, logger, environment='production', tmp_path='/tmp/postrun/dist'):
+def deploy_modules(dir_path, modules, logger, environment='production'):
     """
     Deploys all modules passed via git.
     """
 
-    threads = []
-    clear_folder(tmp_path)
-
     for module in modules.items():
         module_name = str(module[0])
+        module_dir = os.path.join(dir_path, module_name)
+
         logger.debug('Deploying git {0}'.format(module_name))
 
-        t = threading.Thread(target=clone_module, args=(module, tmp_path, logger))
-        threads.append(t)
-        t.start()
-
-    clear_folder(dir_path)
-    shutil.move(tmp_path, dir_path)
+        shutil.rmtree(module_dir)
+        clone_module(module, dir_path, logger)
 
 
 def main(args,
@@ -252,6 +267,7 @@ def main(args,
     Where the magic happens.
     """
 
+    mod = args.module
     log = Logger(verbose=args.verbose)
     environments = os.listdir(puppet_base)
 
@@ -260,7 +276,8 @@ def main(args,
         modules = load_modules(dir_path=puppet_base,
                                environment=env,
                                location=location,
-                               logger=log)
+                               logger=log,
+                               module_to_load=mod)
 
         dist_dir = os.path.join(puppet_base, env, 'dist')
         hiera_dir = os.path.join(hiera_base, env)
