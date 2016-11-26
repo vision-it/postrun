@@ -24,20 +24,6 @@ def module():
 
 
 @pytest.mark.verbose
-@mock.patch('subprocess.check_call')
-def test_clone_module_fail_verbose(mock_call, mock_logger, capfd):
-
-    mock_call.side_effect = KeyError('foo')
-    module = ('roles',
-              {'url': 'https://github.com/vision-it/foobar.git', 'ref': 'notabranch'})
-
-    postrun.clone_module(module, '/tmp', mock_logger)
-    out, err = capfd.readouterr()
-
-    assert(out == '[ERROR]: Error while cloning roles\n')
-
-
-@pytest.mark.verbose
 def test_load_modules_not_mod_verbose(mock_logger, capfd):
 
     directory = os.path.dirname(os.path.realpath(__file__))
@@ -125,3 +111,17 @@ def test_deploy_modules_vagrant_sym_verbose(mock_clear, mock_sym, mock_clone, mo
     out, err = capfd.readouterr()
 
     assert (out == "[DEBUG]: Deploying local mod1_name\n")
+
+
+@pytest.mark.verbose
+@mock.patch('postrun.git')
+def test_clone_module_fail_verbose(mock_git, mock_logger, capfd):
+
+    mock_git.side_effect = RuntimeError('foo')
+    module = ('roles',
+              {'url': 'https://github.com/vision-it/foobar.git', 'ref': 'notabranch'})
+
+    postrun.clone_module(module=module, target_directory='/tmp', logger=mock_logger)
+    out, err = capfd.readouterr()
+
+    assert(out == '[ERROR]: Error while cloning roles\n')
