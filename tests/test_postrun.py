@@ -391,8 +391,8 @@ def test_main_vagrant(mock_log, mock_deploy, mock_clear, mock_mods, mock_os, mod
 
 
 @pytest.mark.main
-@mock.patch('argparse.ArgumentParser')
-def test_commandline(mock_parser):
+def test_commandline():
 
-    postrun.commandline()
-    assert(mock_parser.call_count == 1)
+    test_parser = postrun.commandline(['-v'])
+
+    assert(test_parser.verbose == True)

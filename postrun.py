@@ -37,7 +37,7 @@ def Logger(log_format='%(asctime)s [%(levelname)s]: %(message)s',
     return log
 
 
-def commandline():
+def commandline(args):
     """
     Settings for the commandline arguments.
     Returns the parsed arguments.
@@ -45,13 +45,13 @@ def commandline():
 
     parser = argparse.ArgumentParser(description='Postrun script to deploy Puppet modules via git or locally')
 
-    parser.add_argument("-v", "--verbose", help="increase output verbosity",
-                    action="store_true")
+    parser.add_argument("-v", "--verbose",
+                        help="increase output verbosity",
+                        action="store_true")
+
     parser.set_defaults(verbose=False)
 
-    cmd_arguments = parser.parse_args()
-
-    return cmd_arguments
+    return parser.parse_args(args)
 
 
 def git(*args):
@@ -270,7 +270,7 @@ def main(args,
 
 if __name__ == "__main__":
 
-    args = commandline()
+    args = commandline(sys.argv[1:])
     is_vagrant = is_vagrant()
     location = get_location()
 
