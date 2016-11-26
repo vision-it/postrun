@@ -83,9 +83,8 @@ def test_deploy_hiera_with_folder(mock_rmtree, mock_remove, mock_sym):
     postrun.deploy_hiera(hiera_dir='/hiera/foobar/folder')
 
     mock_rmtree.assert_called_once_with('/hiera/foobar/folder')
-    assert(mock_remove.call_count == 0)
-
     mock_sym.assert_called_once_with('/opt/puppet/hiera', '/hiera/foobar/folder')
+    assert(mock_remove.call_count == 0)
 
 
 @pytest.mark.hiera
@@ -99,9 +98,8 @@ def test_deploy_hiera_with_sym(mock_rmtree, mock_remove, mock_sym, mock_islink):
     postrun.deploy_hiera(hiera_dir='/hiera/foobar/symlink')
 
     mock_remove.assert_called_once_with('/hiera/foobar/symlink')
-    assert(mock_rmtree.call_count == 0)
-
     mock_sym.assert_called_once_with('/opt/puppet/hiera', '/hiera/foobar/symlink')
+    assert(mock_rmtree.call_count == 0)
 
 
 @pytest.mark.git
@@ -135,6 +133,7 @@ def test_clone_module(mock_call):
 def test_is_vagrant():
 
     virtual = postrun.is_vagrant()
+
     assert(virtual == False)
 
 
@@ -205,7 +204,7 @@ def test_load_modules_no_loc(module, mock_logger, capfd):
     out, err = capfd.readouterr()
 
     assert(loaded_mod == module)
-    assert (out == '[WARNING]: No module configuration for not_loc, use default\n')
+    assert(out == '[WARNING]: No module configuration for not_loc, use default\n')
 
 
 @pytest.mark.modules
@@ -220,7 +219,9 @@ def test_load_modules_no_file(mock_logger, capfd):
 
 @pytest.mark.deploy
 @mock.patch('subprocess.check_call')
-def test_deploy_modules(mock_call):
+@mock.patch('postrun.clear_folder')
+@mock.patch('shutil.move')
+def test_deploy_modules(mock_move, mock_clear, mock_call):
 
     mock_logger = mock.MagicMock()
     directory = os.path.dirname(os.path.realpath(__file__))
@@ -231,8 +232,9 @@ def test_deploy_modules(mock_call):
 
     postrun.deploy_modules('/foobar', modules, mock_logger)
 
+    mock_move.assert_called_once_with('/tmp/postrun/dist', '/foobar')
     mock_call.assert_called_once_with(
-        ['git', 'clone', 'https://github.com/vision-it/puppet-roles.git', '-b', 'master', '/foobar/mod1_name'],
+        ['git', 'clone', 'https://github.com/vision-it/puppet-roles.git', '-b', 'master', '/tmp/postrun/dist/mod1_name'],
         stderr=-1,
         stdout=-1,
         timeout=20
@@ -241,7 +243,9 @@ def test_deploy_modules(mock_call):
 
 @pytest.mark.deploy
 @mock.patch('subprocess.check_call')
-def test_deploy_modules_verbose(mock_call, mock_logger, capfd):
+@mock.patch('postrun.clear_folder')
+@mock.patch('shutil.move')
+def test_deploy_modules_verbose(mock_move, mock_clear, mock_call, mock_logger, capfd):
 
     directory = os.path.dirname(os.path.realpath(__file__))
     modules = postrun.load_modules(directory,
@@ -259,7 +263,8 @@ def test_deploy_modules_verbose(mock_call, mock_logger, capfd):
 @mock.patch('postrun.deploy_hiera')
 @mock.patch('postrun.clone_module')
 @mock.patch('os.symlink')
-def test_deploy_modules_vagrant_verbose(mock_sym, mock_clone, mock_hiera, mock_logger, capfd):
+@mock.patch('postrun.clear_folder')
+def test_deploy_modules_vagrant_verbose(mock_clear, mock_sym, mock_clone, mock_hiera, mock_logger, capfd):
 
     directory = os.path.dirname(os.path.realpath(__file__))
     modules = postrun.load_modules(directory, mock_logger,  environment='', location='some_loc')
@@ -274,7 +279,8 @@ def test_deploy_modules_vagrant_verbose(mock_sym, mock_clone, mock_hiera, mock_l
 @mock.patch('postrun.deploy_hiera')
 @mock.patch('postrun.clone_module')
 @mock.patch('os.symlink')
-def test_deploy_modules_vagrant_clone(mock_sym, mock_clone, mock_hiera):
+@mock.patch('postrun.clear_folder')
+def test_deploy_modules_vagrant_clone(mock_clear, mock_sym, mock_clone, mock_hiera):
 
     mock_logger = mock.MagicMock()
 
@@ -293,7 +299,8 @@ def test_deploy_modules_vagrant_clone(mock_sym, mock_clone, mock_hiera):
 @mock.patch('postrun.deploy_hiera')
 @mock.patch('postrun.clone_module')
 @mock.patch('os.symlink')
-def test_deploy_modules_vagrant_sym(mock_sym, mock_clone, mock_hiera, mock_hasmod):
+@mock.patch('postrun.clear_folder')
+def test_deploy_modules_vagrant_sym(mock_clear, mock_sym, mock_clone, mock_hiera, mock_hasmod):
 
     mock_logger = mock.MagicMock()
 
@@ -308,6 +315,7 @@ def test_deploy_modules_vagrant_sym(mock_sym, mock_clone, mock_hiera, mock_hasmo
 
     assert(mock_clone.call_count == 0)
     assert(mock_hasmod.call_count == 1)
+    assert(mock_clear.call_count == 1)
 
 
 @pytest.mark.deploy
@@ -315,7 +323,8 @@ def test_deploy_modules_vagrant_sym(mock_sym, mock_clone, mock_hiera, mock_hasmo
 @mock.patch('postrun.deploy_hiera')
 @mock.patch('postrun.clone_module')
 @mock.patch('os.symlink')
-def test_deploy_modules_vagrant_sym_verbose(mock_sym, mock_clone, mock_hiera, mock_hasmod, mock_logger, capfd):
+@mock.patch('postrun.clear_folder')
+def test_deploy_modules_vagrant_sym_verbose(mock_clear, mock_sym, mock_clone, mock_hiera, mock_hasmod, mock_logger, capfd):
 
     directory = os.path.dirname(os.path.realpath(__file__))
     modules = postrun.load_modules(directory, mock_logger, environment='', location='some_loc')
@@ -332,7 +341,8 @@ def test_deploy_modules_vagrant_sym_verbose(mock_sym, mock_clone, mock_hiera, mo
 @mock.patch('postrun.deploy_hiera')
 @mock.patch('postrun.clone_module')
 @mock.patch('os.symlink')
-def test_deploy_modules_vagrant_sym_dash(mock_sym, mock_clone, mock_hiera, mock_hasmod):
+@mock.patch('postrun.clear_folder')
+def test_deploy_modules_vagrant_sym_dash(mock_clear, mock_sym, mock_clone, mock_hiera, mock_hasmod):
 
     mock_logger = mock.MagicMock()
     directory = os.path.dirname(os.path.realpath(__file__))
@@ -363,7 +373,6 @@ def test_main_regular(mock_log, mock_deploy, mock_clear, mock_mods, mock_os, mod
     postrun.main(args=mock_args, is_vagrant=False)
 
     mock_os.assert_called_once_with('/etc/puppetlabs/code/environments/')
-    assert(mock_clear.call_count == 2)
     assert(mock_deploy.call_count == 2)
     assert(mock_mods.call_count == 2)
     assert(mock_log.call_count == 1)
@@ -384,7 +393,6 @@ def test_main_vagrant(mock_log, mock_deploy, mock_clear, mock_mods, mock_os, mod
     postrun.main(args=mock_args, is_vagrant=True)
 
     mock_os.assert_called_once_with('/etc/puppetlabs/code/environments/')
-    assert(mock_clear.call_count == 2)
     assert(mock_deploy.call_count == 2)
     assert(mock_mods.call_count == 2)
     assert(mock_log.call_count == 1)

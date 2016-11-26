@@ -64,7 +64,7 @@ def git(*args):
     return subprocess.check_call(['git'] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
 
 
-def clone_module(module, target_directory, log):
+def clone_module(module, target_directory, logger):
     """
     Clones a git repository.
     Used to get each module.
@@ -78,7 +78,7 @@ def clone_module(module, target_directory, log):
     try:
         git('clone', url, '-b', ref, target)
     except:
-        log.error('Error while cloning {0}'.format(name))
+        logger.error('Error while cloning {0}'.format(name))
 
 
 def load_yaml(file_name):
@@ -150,7 +150,7 @@ def get_location():
     return location
 
 
-def load_modules(dir_path, log, environment='production', location='default'):
+def load_modules(dir_path, logger, environment='production', location='default'):
     """
     Loads the modules.yaml file
     """
@@ -158,7 +158,7 @@ def load_modules(dir_path, log, environment='production', location='default'):
     modules_file = os.path.join(dir_path, environment, 'modules.yaml')
 
     if not os.path.isfile(modules_file):
-        log.error('No modules.yaml found for {0}'.format(environment))
+        logger.error('No modules.yaml found for {0}'.format(environment))
         return {}
 
     yaml = load_yaml(modules_file)
@@ -167,7 +167,7 @@ def load_modules(dir_path, log, environment='production', location='default'):
     try:
         modules = locations[str(location)]
     except:
-        log.warn('No module configuration for {0}, use default'.format(location))
+        logger.warn('No module configuration for {0}, use default'.format(location))
         modules = locations['default']
 
     return modules
@@ -188,7 +188,7 @@ def deploy_hiera(hiera_dir, hiera_opt='/opt/puppet/hiera'):
 
 def deploy_modules_vagrant(dir_path,
                            modules,
-                           log,
+                           logger,
                            hiera_path='/etc/puppetlabs/code/hieradata',
                            opt_path='/opt/puppet/modules',
                            environment='production'):
@@ -200,6 +200,7 @@ def deploy_modules_vagrant(dir_path,
     threads = []
     hiera_dir = os.path.join(hiera_path, environment)
 
+    clear_folder(dir_path)
     deploy_hiera(hiera_dir)
 
     for module in modules.items():
@@ -207,34 +208,38 @@ def deploy_modules_vagrant(dir_path,
         has_opt, delimiter = has_opt_module(module_name)
 
         if has_opt:
-            log.debug('Deploying local {0}'.format(module_name))
+            logger.debug('Deploying local {0}'.format(module_name))
 
             src = os.path.join(opt_path, module_name.replace('_', delimiter))
             dst = os.path.join(dir_path, module_name)
             os.symlink(src, dst)
 
         else:
-            log.debug('Deploying git {0}'.format(module_name))
+            logger.debug('Deploying git {0}'.format(module_name))
 
-            t = threading.Thread(target=clone_module, args=(module, dir_path, log))
+            t = threading.Thread(target=clone_module, args=(module, dir_path, logger))
             threads.append(t)
             t.start()
 
 
-def deploy_modules(dir_path, modules, log, environment='production'):
+def deploy_modules(dir_path, modules, logger, environment='production', tmp_path='/tmp/postrun/dist'):
     """
     Deploys all modules passed via git.
     """
 
     threads = []
+    clear_folder(tmp_path)
 
     for module in modules.items():
         module_name = str(module[0])
-        log.debug('Deploying git {0}'.format(module_name))
+        logger.debug('Deploying git {0}'.format(module_name))
 
-        t = threading.Thread(target=clone_module, args=(module, dir_path, log))
+        t = threading.Thread(target=clone_module, args=(module, tmp_path, logger))
         threads.append(t)
         t.start()
+
+    clear_folder(dir_path)
+    shutil.move(tmp_path, dir_path)
 
 
 def main(args,
@@ -247,25 +252,23 @@ def main(args,
     Where the magic happens.
     """
 
-    logger = Logger(verbose=args.verbose)
+    log = Logger(verbose=args.verbose)
     environments = os.listdir(puppet_base)
 
-    for environment in environments:
+    for env in environments:
 
         modules = load_modules(dir_path=puppet_base,
-                               environment=environment,
+                               environment=env,
                                location=location,
-                               log=logger)
+                               logger=log)
 
-        dist_dir = os.path.join(puppet_base, environment, 'dist')
-        hiera_dir = os.path.join(hiera_base, environment)
-
-        clear_folder(dist_dir)
+        dist_dir = os.path.join(puppet_base, env, 'dist')
+        hiera_dir = os.path.join(hiera_base, env)
 
         if is_vagrant:
-            deploy_modules_vagrant(dir_path=dist_dir, modules=modules, environment=environment, log=logger)
+            deploy_modules_vagrant(dir_path=dist_dir, modules=modules, environment=env, logger=log)
         else:
-            deploy_modules(dir_path=dist_dir, modules=modules, log=logger)
+            deploy_modules(dir_path=dist_dir, modules=modules, logger=log)
 
 
 if __name__ == "__main__":
