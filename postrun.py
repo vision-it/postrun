@@ -152,7 +152,6 @@ def get_location():
     try:
         cmd = 'facter location'
         p = subprocess.Popen(cmd,
-                             shell=True,
                              stdin=subprocess.PIPE,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT,

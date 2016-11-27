@@ -125,7 +125,6 @@ def test_get_location_exception(mock_popen):
 
     mock_popen.assert_called_once_with('facter location',
                                        close_fds=True,
-                                       shell=True,
                                        stderr=-2,
                                        stdin=-1,
                                        stdout=-1)
@@ -146,7 +145,6 @@ def test_get_location(mock_popen):
 
     mock_popen.assert_called_once_with('facter location',
                                        close_fds=True,
-                                       shell=True,
                                        stderr=-2,
                                        stdin=-1,
                                        stdout=-1)
