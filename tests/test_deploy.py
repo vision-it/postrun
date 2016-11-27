@@ -41,7 +41,7 @@ def test_deploy_modules(mock_rm, mock_call):
 @mock.patch('postrun.deploy_hiera')
 @mock.patch('postrun.clone_module')
 @mock.patch('os.symlink')
-@mock.patch('postrun.clear_folder')
+@mock.patch('postrun.rmdir')
 def test_deploy_modules_vagrant_clone(mock_clear, mock_sym, mock_clone, mock_hiera):
 
     mock_logger = mock.MagicMock()
@@ -61,7 +61,7 @@ def test_deploy_modules_vagrant_clone(mock_clear, mock_sym, mock_clone, mock_hie
 @mock.patch('postrun.deploy_hiera')
 @mock.patch('postrun.clone_module')
 @mock.patch('os.symlink')
-@mock.patch('postrun.clear_folder')
+@mock.patch('postrun.rmdir')
 def test_deploy_modules_vagrant_sym(mock_clear, mock_sym, mock_clone, mock_hiera, mock_hasmod):
 
     mock_logger = mock.MagicMock()
@@ -85,7 +85,7 @@ def test_deploy_modules_vagrant_sym(mock_clear, mock_sym, mock_clone, mock_hiera
 @mock.patch('postrun.deploy_hiera')
 @mock.patch('postrun.clone_module')
 @mock.patch('os.symlink')
-@mock.patch('postrun.clear_folder')
+@mock.patch('postrun.rmdir')
 def test_deploy_modules_vagrant_sym_dash(mock_clear, mock_sym, mock_clone, mock_hiera, mock_hasmod):
 
     mock_logger = mock.MagicMock()

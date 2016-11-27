@@ -17,12 +17,25 @@ def module():
 
 @pytest.mark.utils
 @mock.patch('shutil.rmtree')
-@mock.patch('os.makedirs')
-def test_clear_folder(mock_mkdir, mock_rm):
+@mock.patch('os.remove')
+@mock.patch('os.path.exists', return_value=True)
+def test_rmdir_directory(mock_exists, mock_remove, mock_rm):
 
-    postrun.clear_folder('/puppet/foobar')
+    postrun.rmdir('/puppet/foobar')
+
     mock_rm.assert_called_once_with('/puppet/foobar')
-    mock_mkdir.assert_called_once_with('/puppet/foobar')
+
+
+@pytest.mark.utils
+@mock.patch('shutil.rmtree')
+@mock.patch('os.remove')
+@mock.patch('os.path.exists', return_value=True)
+@mock.patch('os.path.islink', return_value=True)
+def test_rmdir_symlink(mock_link, mock_exists, mock_remove, mock_rm):
+
+    postrun.rmdir('/puppet/foobar')
+
+    mock_remove.assert_called_once_with('/puppet/foobar')
 
 
 @pytest.mark.utils
@@ -54,30 +67,13 @@ def test_has_opt_module_true(mock_os):
 
 @pytest.mark.utils
 @mock.patch('os.symlink')
-@mock.patch('os.remove')
-@mock.patch('shutil.rmtree')
-def test_deploy_hiera_with_folder(mock_rmtree, mock_remove, mock_sym):
+@mock.patch('postrun.rmdir')
+def test_deploy_hiera_with_folder(mock_rmdir, mock_sym):
 
     postrun.deploy_hiera(hiera_dir='/hiera/foobar/folder')
 
-    mock_rmtree.assert_called_once_with('/hiera/foobar/folder')
+    mock_rmdir.assert_called_once_with('/hiera/foobar/folder')
     mock_sym.assert_called_once_with('/opt/puppet/hiera', '/hiera/foobar/folder')
-    assert(mock_remove.call_count == 0)
-
-
-@pytest.mark.utils
-@mock.patch('os.path.islink')
-@mock.patch('os.symlink')
-@mock.patch('os.remove')
-@mock.patch('shutil.rmtree')
-def test_deploy_hiera_with_sym(mock_rmtree, mock_remove, mock_sym, mock_islink):
-
-    mock_islink.return_value = True
-    postrun.deploy_hiera(hiera_dir='/hiera/foobar/symlink')
-
-    mock_remove.assert_called_once_with('/hiera/foobar/symlink')
-    mock_sym.assert_called_once_with('/opt/puppet/hiera', '/hiera/foobar/symlink')
-    assert(mock_rmtree.call_count == 0)
 
 
 @pytest.mark.utils

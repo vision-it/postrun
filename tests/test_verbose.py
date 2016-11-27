@@ -53,7 +53,7 @@ def test_load_modules_no_loc_verbose(module, mock_logger, capfd):
 
 
 @pytest.mark.verbose
-@mock.patch('postrun.clear_folder')
+@mock.patch('postrun.rmdir')
 def test_load_modules_no_file_verbose(mock,mock_logger, capfd):
 
     mod = postrun.load_modules('/foobar', mock_logger, 'staging')
@@ -83,7 +83,7 @@ def test_deploy_modules_verbose(mock_rm, mock_call, mock_logger, capfd):
 @mock.patch('postrun.deploy_hiera')
 @mock.patch('postrun.clone_module')
 @mock.patch('os.symlink')
-@mock.patch('postrun.clear_folder')
+@mock.patch('postrun.rmdir')
 def test_deploy_modules_vagrant_verbose(mock_clear, mock_sym, mock_clone, mock_hiera, mock_logger, capfd):
 
     directory = os.path.dirname(os.path.realpath(__file__))
@@ -100,7 +100,7 @@ def test_deploy_modules_vagrant_verbose(mock_clear, mock_sym, mock_clone, mock_h
 @mock.patch('postrun.deploy_hiera')
 @mock.patch('postrun.clone_module')
 @mock.patch('os.symlink')
-@mock.patch('postrun.clear_folder')
+@mock.patch('postrun.rmdir')
 def test_deploy_modules_vagrant_sym_verbose(mock_clear, mock_sym, mock_clone, mock_hiera, mock_hasmod, mock_logger, capfd):
 
     directory = os.path.dirname(os.path.realpath(__file__))

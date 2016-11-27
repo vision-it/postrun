@@ -12,6 +12,9 @@ import yaml
 
 
 def threaded(func):
+    """
+    Multithreading function decorator
+    """
 
     def run(*args, **kwargs):
 
@@ -69,6 +72,18 @@ def commandline(args):
     return parser.parse_args(args)
 
 
+def rmdir(directory):
+    """
+    Removes a directory or symlink to a directory.
+    """
+
+    if os.path.exists(directory):
+        if os.path.islink(directory):
+            os.remove(directory)
+        else:
+            shutil.rmtree(directory)
+
+
 def git(*args):
     """
     Subprocess wrapper for git
@@ -107,16 +122,6 @@ def load_yaml(file_name):
         parsed_yaml = yaml.load(yaml_file)
 
     return parsed_yaml
-
-
-def clear_folder(dir_path):
-    """
-    Clears out a directory by removing and recreating it.
-    Used to clear out the /dist directory
-    """
-
-    shutil.rmtree(dir_path)
-    os.makedirs(dir_path)
 
 
 def is_vagrant():
@@ -201,11 +206,7 @@ def deploy_hiera(hiera_dir, hiera_opt='/opt/puppet/hiera'):
     Removes and sets the symlink for the Hiera data in Vagrant.
     """
 
-    if os.path.islink(hiera_dir):
-        os.remove(hiera_dir)
-    else:
-        shutil.rmtree(hiera_dir)
-
+    rmdir(hiera_dir)
     os.symlink(hiera_opt, hiera_dir)
 
 
@@ -221,15 +222,16 @@ def deploy_modules_vagrant(dir_path,
     """
 
     hiera_dir = os.path.join(hiera_path, environment)
-
-    clear_folder(dir_path)
     deploy_hiera(hiera_dir)
 
     for module in modules.items():
         module_name = str(module[0])
-        has_opt, delimiter = has_opt_module(module_name)
+        module_dir = os.path.join(dir_path, module_name)
+        has_opt_path, delimiter = has_opt_module(module_name)
 
-        if has_opt:
+        rmdir(module_dir)
+
+        if has_opt_path:
             logger.debug('Deploying local {0}'.format(module_name))
 
             src = os.path.join(opt_path, module_name.replace('_', delimiter))
@@ -252,7 +254,7 @@ def deploy_modules(dir_path, modules, logger, environment='production'):
 
         logger.debug('Deploying git {0}'.format(module_name))
 
-        shutil.rmtree(module_dir)
+        rmdir(module_dir)
         clone_module(module, dir_path, logger)
 
 
@@ -260,7 +262,7 @@ def main(args,
          is_vagrant=False,
          location='default',
          puppet_base='/etc/puppetlabs/code/environments/',
-         hiera_base='/etc/puppetlabs/code/hieradata',):
+         hiera_base='/etc/puppetlabs/code/hieradata'):
 
     """
     Where the magic happens.
@@ -268,9 +270,11 @@ def main(args,
 
     mod = args.module
     log = Logger(verbose=args.verbose)
-    environments = os.listdir(puppet_base)
 
+    environments = os.listdir(puppet_base)
     for env in environments:
+        dist_dir = os.path.join(puppet_base, env, 'dist')
+        hiera_dir = os.path.join(hiera_base, env)
 
         modules = load_modules(dir_path=puppet_base,
                                environment=env,
@@ -278,13 +282,10 @@ def main(args,
                                logger=log,
                                module_to_load=mod)
 
-        dist_dir = os.path.join(puppet_base, env, 'dist')
-        hiera_dir = os.path.join(hiera_base, env)
-
         if is_vagrant:
             deploy_modules_vagrant(dir_path=dist_dir, modules=modules, environment=env, logger=log)
         else:
-            deploy_modules(dir_path=dist_dir, modules=modules, logger=log)
+            deploy_modules(dir_path=dist_dir, modules=modules, environment=env, logger=log)
 
 
 if __name__ == "__main__":

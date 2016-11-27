@@ -18,10 +18,9 @@ def module():
 @pytest.mark.main
 @mock.patch('os.listdir')
 @mock.patch('postrun.load_modules')
-@mock.patch('postrun.clear_folder')
 @mock.patch('postrun.deploy_modules')
 @mock.patch('postrun.Logger')
-def test_main_regular(mock_log, mock_deploy, mock_clear, mock_mods, mock_os, module):
+def test_main_regular(mock_log, mock_deploy, mock_mods, mock_os, module):
 
     mock_mods.return_value = module
     mock_os.return_value = ['production', 'staging']
@@ -38,10 +37,9 @@ def test_main_regular(mock_log, mock_deploy, mock_clear, mock_mods, mock_os, mod
 @pytest.mark.main
 @mock.patch('os.listdir')
 @mock.patch('postrun.load_modules')
-@mock.patch('postrun.clear_folder')
 @mock.patch('postrun.deploy_modules_vagrant')
 @mock.patch('postrun.Logger')
-def test_main_vagrant(mock_log, mock_deploy, mock_clear, mock_mods, mock_os, module):
+def test_main_vagrant(mock_log, mock_deploy, mock_mods, mock_os, module):
 
     mock_mods.return_value = module
     mock_os.return_value = ['production', 'staging']
