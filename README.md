@@ -5,6 +5,12 @@ Deploys Puppet modules from modules.yaml
 
 # Prerequisite
 
+## Vagrant
+To deploy local modules and Hiera data in Vagrant the files need to places under:
+
+- */opt/puppet/modules*
+- */opt/puppet/hiera*
+
 ## modules.yaml
 The postrun script requires a modules.yaml file for each environment in */etc/puppetlabs/code/environments/environment_name/modules.yaml*
 
