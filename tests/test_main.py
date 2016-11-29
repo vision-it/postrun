@@ -20,7 +20,25 @@ def module():
 @mock.patch('postrun.load_modules')
 @mock.patch('postrun.deploy_modules')
 @mock.patch('postrun.Logger')
-def test_main_regular(mock_log, mock_deploy, mock_mods, mock_os, module):
+def test_main_no_folder(mock_log, mock_deploy, mock_mods, mock_os, capsys):
+    """
+    Test main function without existing folder. Should exit with 2
+    """
+
+    mock_args = mock.MagicMock()
+    mock_os.side_effect = FileNotFoundError()
+
+    with pytest.raises(SystemExit):
+        postrun.main(args=mock_args, is_vagrant=False)
+
+
+@pytest.mark.main
+@mock.patch('os.listdir')
+@mock.patch('postrun.load_modules')
+@mock.patch('postrun.deploy_modules')
+@mock.patch('postrun.Logger')
+@mock.patch('sys.exit')
+def test_main_regular(sys_exit, mock_log, mock_deploy, mock_mods, mock_os, module):
     """
     Test main function regularly. Should call deploy_modules
     """
@@ -42,7 +60,8 @@ def test_main_regular(mock_log, mock_deploy, mock_mods, mock_os, module):
 @mock.patch('postrun.load_modules')
 @mock.patch('postrun.deploy_modules_vagrant')
 @mock.patch('postrun.Logger')
-def test_main_vagrant(mock_log, mock_deploy, mock_mods, mock_os, module):
+@mock.patch('sys.exit')
+def test_main_vagrant(sys_exit, mock_log, mock_deploy, mock_mods, mock_os, module):
     """
     Test main function called in Vagrant. Should call deploy_modules_vagrant
     """

@@ -271,7 +271,12 @@ def main(args,
     mod = args.module
     log = Logger(verbose=args.verbose)
 
-    environments = os.listdir(puppet_base)
+    try:
+        environments = os.listdir(puppet_base)
+    except:
+        log.error('{0} not found'.format(puppet_base))
+        sys.exit(2)
+
     for env in environments:
         dist_dir = os.path.join(puppet_base, env, 'dist')
         hiera_dir = os.path.join(hiera_base, env)
@@ -286,6 +291,9 @@ def main(args,
             deploy_modules_vagrant(dir_path=dist_dir, modules=modules, environment=env, logger=log)
         else:
             deploy_modules(dir_path=dist_dir, modules=modules, environment=env, logger=log)
+
+    # That's all folks
+    sys.exit(0)
 
 
 if __name__ == "__main__":
