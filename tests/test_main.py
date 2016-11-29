@@ -21,6 +21,9 @@ def module():
 @mock.patch('postrun.deploy_modules')
 @mock.patch('postrun.Logger')
 def test_main_regular(mock_log, mock_deploy, mock_mods, mock_os, module):
+    """
+    Test main function regularly. Should call deploy_modules
+    """
 
     mock_mods.return_value = module
     mock_os.return_value = ['production', 'staging']
@@ -40,6 +43,9 @@ def test_main_regular(mock_log, mock_deploy, mock_mods, mock_os, module):
 @mock.patch('postrun.deploy_modules_vagrant')
 @mock.patch('postrun.Logger')
 def test_main_vagrant(mock_log, mock_deploy, mock_mods, mock_os, module):
+    """
+    Test main function called in Vagrant. Should call deploy_modules_vagrant
+    """
 
     mock_mods.return_value = module
     mock_os.return_value = ['production', 'staging']
@@ -54,8 +60,22 @@ def test_main_vagrant(mock_log, mock_deploy, mock_mods, mock_os, module):
 
 
 @pytest.mark.main
-def test_commandline():
+def test_commandline_verbosity():
+    """
+    Test that the verbosity is turned on, and default module return value is all
+    """
 
     test_parser = postrun.commandline(['-v'])
 
     assert(test_parser.verbose == True)
+    assert(test_parser.module == 'all')
+
+@pytest.mark.main
+def test_commandline_module():
+    """
+    Test that the module commandline arg can be set.
+    """
+
+    test_parser = postrun.commandline(['-m', 'foobar'])
+
+    assert(test_parser.module == 'foobar')

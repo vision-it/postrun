@@ -12,6 +12,9 @@ import postrun
 @mock.patch('subprocess.check_call')
 @mock.patch('shutil.rmtree')
 def test_deploy_modules(mock_rm, mock_call):
+    """
+    Test that deploy modules calls git to get a module
+    """
 
     mock_logger = mock.MagicMock()
     directory = os.path.dirname(os.path.realpath(__file__))
@@ -36,6 +39,9 @@ def test_deploy_modules(mock_rm, mock_call):
 @mock.patch('os.symlink')
 @mock.patch('postrun.rmdir')
 def test_deploy_modules_vagrant_clone(mock_clear, mock_sym, mock_clone, mock_hiera):
+    """
+    Test that Hiera and Modules (via git) are deployed in Vagrant
+    """
 
     mock_logger = mock.MagicMock()
 
@@ -56,6 +62,10 @@ def test_deploy_modules_vagrant_clone(mock_clear, mock_sym, mock_clone, mock_hie
 @mock.patch('os.symlink')
 @mock.patch('postrun.rmdir')
 def test_deploy_modules_vagrant_sym(mock_clear, mock_sym, mock_clone, mock_hiera, mock_hasmod):
+    """
+    Test that Hiera and Modules (via symlink) are deployed in Vagrant.
+    Using underscores
+    """
 
     mock_logger = mock.MagicMock()
 
@@ -80,6 +90,10 @@ def test_deploy_modules_vagrant_sym(mock_clear, mock_sym, mock_clone, mock_hiera
 @mock.patch('os.symlink')
 @mock.patch('postrun.rmdir')
 def test_deploy_modules_vagrant_sym_dash(mock_clear, mock_sym, mock_clone, mock_hiera, mock_hasmod):
+    """
+    Test that Hiera and Modules (via symlink) are deployed in Vagrant.
+    Using dashes.
+    """
 
     mock_logger = mock.MagicMock()
     directory = os.path.dirname(os.path.realpath(__file__))
