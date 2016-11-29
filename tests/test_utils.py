@@ -20,6 +20,9 @@ def module():
 @mock.patch('os.remove')
 @mock.patch('os.path.exists', return_value=True)
 def test_rmdir_directory(mock_exists, mock_remove, mock_rm):
+    """
+    Test if rmdir removes a real directory
+    """
 
     postrun.rmdir('/puppet/foobar')
 
@@ -32,6 +35,9 @@ def test_rmdir_directory(mock_exists, mock_remove, mock_rm):
 @mock.patch('os.path.exists', return_value=True)
 @mock.patch('os.path.islink', return_value=True)
 def test_rmdir_symlink(mock_link, mock_exists, mock_remove, mock_rm):
+    """
+    Test if rmdir removes a symlink
+    """
 
     postrun.rmdir('/puppet/foobar')
 
@@ -40,6 +46,9 @@ def test_rmdir_symlink(mock_link, mock_exists, mock_remove, mock_rm):
 
 @pytest.mark.utils
 def test_load_yaml(module):
+    """
+    Test that a yaml file gets loaded.
+    """
 
     directory = os.path.dirname(os.path.realpath(__file__))
     testfile = os.path.join(directory, "modules.yaml")
@@ -50,16 +59,20 @@ def test_load_yaml(module):
 
 @pytest.mark.utils
 def test_has_opt_module_false():
+    """
+    Test that has_opt_module returns a default value if no /opt folder exists
+    """
 
     return_val = postrun.has_opt_module('foobar')
     assert(return_val == (False, '-'))
 
 
 @pytest.mark.utils
-@mock.patch('os.path.exists')
+@mock.patch('os.path.exists', return_value=True)
 def test_has_opt_module_true(mock_os):
-
-    mock_os.return_value = True
+    """
+    Test that has_opt_module return True if /opt folder exists
+    """
 
     return_val = postrun.has_opt_module('/opt', 'foobar')
     assert(return_val == (True, '_'))
@@ -69,6 +82,9 @@ def test_has_opt_module_true(mock_os):
 @mock.patch('os.symlink')
 @mock.patch('postrun.rmdir')
 def test_deploy_hiera_with_folder(mock_rmdir, mock_sym):
+    """
+    Test that deploy_hiera (Vagrant) sets the symlink and removes the old folder
+    """
 
     postrun.deploy_hiera(hiera_dir='/hiera/foobar/folder')
 
@@ -79,6 +95,9 @@ def test_deploy_hiera_with_folder(mock_rmdir, mock_sym):
 @pytest.mark.utils
 @mock.patch('subprocess.check_call')
 def test_clone_module(mock_call):
+    """
+    Test that clone_module calls git
+    """
 
     mock_logger = mock.MagicMock()
 
@@ -105,25 +124,37 @@ def test_clone_module(mock_call):
 
 @pytest.mark.utils
 def test_is_vagrant():
+    """
+    Test return value of is_vagrant if no /vagrant exists
+    """
 
     virtual = postrun.is_vagrant()
 
     assert(virtual == False)
 
 
+@mock.patch('os.path.exists', return_value=True)
+@pytest.mark.utils
+def test_is_vagrant_true(mock_path):
+    """
+    Test return value of is_vagrant if /vagrant exists
+    """
+
+    virtual = postrun.is_vagrant()
+
+    assert(virtual == True)
+
+
 @pytest.mark.utils
 @mock.patch('subprocess.Popen')
 def test_get_location_exception(mock_popen):
+    """
+    Test return if facter isn't available
+    """
 
     mock_popen.side_effect = KeyError('foo')
 
     location = postrun.get_location()
-
-    mock_popen.assert_called_once_with('facter location',
-                                       close_fds=True,
-                                       stderr=-2,
-                                       stdin=-1,
-                                       stdout=-1)
 
     assert(location == 'default')
 
@@ -131,6 +162,9 @@ def test_get_location_exception(mock_popen):
 @pytest.mark.utils
 @mock.patch('subprocess.Popen')
 def test_get_location(mock_popen):
+    """
+    Test return if facter is available
+    """
 
     process_mock = mock.Mock()
     attrs = {'communicate.return_value': (b'output', b'error')}

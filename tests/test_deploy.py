@@ -8,13 +8,6 @@ import unittest.mock as mock
 import postrun
 
 
-@pytest.fixture
-def module():
-
-    mod = {'roles': {'ref': 'production', 'url': 'https://github.com/vision-it/puppet-roles.git'}}
-    return mod
-
-
 @pytest.mark.deploy
 @mock.patch('subprocess.check_call')
 @mock.patch('shutil.rmtree')

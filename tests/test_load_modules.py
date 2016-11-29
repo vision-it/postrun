@@ -17,6 +17,9 @@ def module():
 
 @pytest.mark.modules
 def test_load_modules_real_env():
+    """
+    Test if real location gets loaded
+    """
 
     mock_logger = mock.MagicMock()
     expected_mod = {'other_mod':
@@ -32,7 +35,10 @@ def test_load_modules_real_env():
 
 
 @pytest.mark.modules
-def test_load_modules_no_loc(module, capfd):
+def test_load_modules_no_loc(module):
+    """
+    Test if no location is available in modules.yaml. Should return default location.
+    """
 
     mock_logger = mock.MagicMock()
     directory = os.path.dirname(os.path.realpath(__file__))
@@ -41,13 +47,14 @@ def test_load_modules_no_loc(module, capfd):
                                       environment='',
                                       location='not_loc')
 
-    out, err = capfd.readouterr()
-
     assert(loaded_mod == module)
 
 
 @pytest.mark.modules
-def test_load_modules_no_file(capfd):
+def test_load_modules_no_file():
+    """
+    Test if empty dict is returned if no modules.yaml is available
+    """
 
     mock_logger = mock.MagicMock()
     mod = postrun.load_modules('/foobar', mock_logger, 'staging')
