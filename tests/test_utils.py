@@ -119,7 +119,7 @@ def test_clone_module(mock_call):
                                        '/foobar/roles'],
                                       stderr=-1,
                                       stdout=-1,
-                                      timeout=20)
+                                      timeout=30)
 
 
 @pytest.mark.utils

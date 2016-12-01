@@ -91,7 +91,7 @@ def git(*args):
     For example when the git link is wrong.
     """
 
-    return subprocess.check_call(['git'] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
+    return subprocess.check_call(['git'] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
 
 
 @threaded

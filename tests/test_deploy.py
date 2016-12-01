@@ -29,7 +29,7 @@ def test_deploy_modules(mock_rm, mock_call):
         ['git', 'clone', 'https://github.com/vision-it/puppet-roles.git', '-b', 'master', '/foobar/mod1_name'],
         stderr=-1,
         stdout=-1,
-        timeout=20
+        timeout=30
     )
 
 
