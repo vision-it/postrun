@@ -1,14 +1,16 @@
 language: python
 python:
-  - "3.3"
-  - "3.4"
-  - "3.5"
-  - "3.5-dev" # 3.5 development branch
-  - "nightly" # currently points to 3.6-dev
+- '3.3'
+- '3.4'
+- '3.5'
+- 3.5-dev
+- nightly
 install:
-  - pip install coveralls
-  - pip install -r tests/requirements.txt
+- pip install coveralls
+- pip install -r tests/requirements.txt
 script:
-  - py.test --cov=postrun tests/
-after_success:
-  coveralls
+- py.test --cov=postrun tests/
+after_success: coveralls
+notifications:
+  slack:
+    secure: U4Vjik11RG+DxbvRW+RZZPywC21SOvIrZX9bWaE5BAqYDTiK/f8JoSsBmsDh/12VQFOtamdwZzUBIJnkzhR5CuBzsmYCcKBHncSzm6F8QLQW9KFnU8ObdJovmOn5UphADR2awaXYUQJ+o4I4kEoCMxT4p3IP8xn21FFCrku1OyDUdoJWYdNagaG798zwR4c8pV5K9ba1ujFQyJC69LKKx1HlFRKuwPV8hazFYgLnu8cmmcsB8xGOEjEA30cHCkbr/7pGzjDQ0faQgT2scj5Y2NsnttD4XY15zHX8vPAvD/sl0110X9UI4wkEiVHYhu80r0Oxj3SLjle9lhiA8fY8GQY2aBmPa5SOonIJvpzrh5qFcdz8h38goUA4KtZCCC/ZUWdXWle1XwvLcE7azigYphu8jbrLx1zvqP/U8t8KF6zjMy07SnzKWEvorNVT1570hKCzsBdkcfYv/eyplUXiSUnXzSg0j7wE9BICtsvFu1hbjXBNsNC/5DRagQ3zolBHfLJNQUGMr3iPB+YDMuhFenIEOy/UKVX9iwhgi4BFkBNH21W4xWso2rGu9xf6fFWsLMIPMZ+BV8kyd1qjKHuo0zOKll2ZIqphKhjSSVpwDcgEWAmKfJdncg91SXHHj+ei7rg9IUiUbmQBtWzxQVTznsNP4HFT9Am53wQ2z4/rxnQ=
