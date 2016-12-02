@@ -146,7 +146,7 @@ def test_is_vagrant_true(mock_path):
 
 
 @pytest.mark.utils
-@mock.patch('subprocess.Popen')
+@mock.patch('subprocess.check_output')
 def test_get_location_exception(mock_popen):
     """
     Test return if facter isn't available
@@ -160,24 +160,14 @@ def test_get_location_exception(mock_popen):
 
 
 @pytest.mark.utils
-@mock.patch('subprocess.Popen')
+@mock.patch('subprocess.check_output', return_value=b'output')
 def test_get_location(mock_popen):
     """
     Test return if facter is available
     """
 
-    process_mock = mock.Mock()
-    attrs = {'communicate.return_value': (b'output', b'error')}
-    process_mock.configure_mock(**attrs)
-    mock_popen.return_value = process_mock
-
     location = postrun.get_location()
 
-    mock_popen.assert_called_once_with('facter location',
-                                       close_fds=True,
-                                       shell=True,
-                                       stderr=-2,
-                                       stdin=-1,
-                                       stdout=-1)
+    mock_popen.assert_called_once_with(['/opt/puppetlabs/bin/facter', 'location'])
 
     assert(location == 'output')

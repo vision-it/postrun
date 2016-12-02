@@ -155,15 +155,9 @@ def get_location():
     """
 
     try:
-        cmd = 'facter location'
-        p = subprocess.Popen(cmd,
-                             shell=True,
-                             stdin=subprocess.PIPE,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT,
-                             close_fds=True)
-        out, err = p.communicate()
-        location = out.decode("utf-8").rstrip('\n')
+        cmd = ['/opt/puppetlabs/bin/facter', 'location']
+        p = subprocess.check_output(cmd)
+        location = p.decode("utf-8").rstrip('\n')
 
     except:
         location = 'default'
