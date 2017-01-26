@@ -107,7 +107,7 @@ def clone_module(module, target_directory, logger):
     target = os.path.join(target_directory, name)
 
     try:
-        git('clone', url, '-b', ref, target)
+        git('clone', '--depth', '1', url, '-b', ref, target)
     except:
         logger.error('Error while cloning {0}'.format(name))
 
