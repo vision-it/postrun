@@ -26,7 +26,7 @@ def test_deploy_modules(mock_rm, mock_call):
     postrun.deploy_modules('/foobar', modules, mock_logger)
 
     mock_call.assert_called_once_with(
-        ['git', 'clone', 'https://github.com/vision-it/puppet-roles.git', '-b', 'master', '/foobar/mod1_name'],
+        ['git', 'clone', '--depth', '1', 'https://github.com/vision-it/puppet-roles.git', '-b', 'master', '/foobar/mod1_name'],
         stderr=-1,
         stdout=-1,
         timeout=30

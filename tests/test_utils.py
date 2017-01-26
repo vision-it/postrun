@@ -113,6 +113,8 @@ def test_clone_module(mock_call):
 
     mock_call.assert_called_once_with(['git',
                                        'clone',
+                                       '--depth',
+                                       '1',
                                        'https://github.com/vision-it/puppet-roles.git',
                                        '-b',
                                        'production',
