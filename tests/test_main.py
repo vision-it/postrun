@@ -38,7 +38,8 @@ def test_main_no_folder(mock_log, mock_deploy, mock_mods, mock_os, capsys):
 @mock.patch('postrun.deploy_modules')
 @mock.patch('postrun.Logger')
 @mock.patch('sys.exit')
-def test_main_regular(sys_exit, mock_log, mock_deploy, mock_mods, mock_os, module):
+@mock.patch('postrun.mkdir')
+def test_main_regular(mock_mk, sys_exit, mock_log, mock_deploy, mock_mods, mock_os, module):
     """
     Test main function regularly. Should call deploy_modules
     """
@@ -53,6 +54,7 @@ def test_main_regular(sys_exit, mock_log, mock_deploy, mock_mods, mock_os, modul
     assert(mock_deploy.call_count == 2)
     assert(mock_mods.call_count == 2)
     assert(mock_log.call_count == 1)
+    assert(mock_mk.call_count == 4) # Twice for each environment
 
 
 @pytest.mark.main
@@ -61,7 +63,8 @@ def test_main_regular(sys_exit, mock_log, mock_deploy, mock_mods, mock_os, modul
 @mock.patch('postrun.deploy_modules_vagrant')
 @mock.patch('postrun.Logger')
 @mock.patch('sys.exit')
-def test_main_vagrant(sys_exit, mock_log, mock_deploy, mock_mods, mock_os, module):
+@mock.patch('postrun.mkdir')
+def test_main_vagrant(mock_mk, sys_exit, mock_log, mock_deploy, mock_mods, mock_os, module):
     """
     Test main function called in Vagrant. Should call deploy_modules_vagrant
     """
@@ -76,6 +79,7 @@ def test_main_vagrant(sys_exit, mock_log, mock_deploy, mock_mods, mock_os, modul
     assert(mock_deploy.call_count == 2)
     assert(mock_mods.call_count == 2)
     assert(mock_log.call_count == 1)
+    assert(mock_mk.call_count == 4) # Twice for each environment
 
 
 @pytest.mark.main

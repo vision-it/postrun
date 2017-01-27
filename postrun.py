@@ -83,6 +83,14 @@ def rmdir(directory):
         else:
             shutil.rmtree(directory)
 
+def mkdir(directory):
+    """
+    Create a non existing directory.
+    """
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
 
 def git(*args):
     """
@@ -274,7 +282,10 @@ def main(args,
 
     for env in environments:
         dist_dir = os.path.join(puppet_base, env, 'dist')
+        mkdir(dist_dir)
+
         hiera_dir = os.path.join(hiera_base, env)
+        mkdir(hiera_dir)
 
         modules = load_modules(dir_path=puppet_base,
                                environment=env,
