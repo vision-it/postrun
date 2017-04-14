@@ -76,7 +76,7 @@ def test_deploy_modules_verbose(mock_rm, mock_call, mock_logger, capfd):
     postrun.deploy_modules('/foobar', modules, mock_logger)
     out, err = capfd.readouterr()
 
-    assert (out == '[DEBUG]: Deploying git mod1_name\n')
+    assert (out == '[DEBUG]: Deploying git mod1_name with branch master\n')
 
 
 @pytest.mark.verbose
@@ -92,7 +92,7 @@ def test_deploy_modules_vagrant_verbose(mock_clear, mock_sym, mock_clone, mock_h
     postrun.deploy_modules_vagrant('/foobar', modules, mock_logger)
     out, err = capfd.readouterr()
 
-    assert (out == "[DEBUG]: Deploying git mod1_name\n")
+    assert (out == "[DEBUG]: Deploying git mod1_name with branch master\n")
 
 
 @pytest.mark.verbose

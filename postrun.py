@@ -241,6 +241,7 @@ def deploy_modules_vagrant(dir_path,
 
     for module in modules.items():
         module_name = str(module[0])
+        module_branch = str(module[1]['ref'])
         module_dir = os.path.join(dir_path, module_name)
         has_opt_path, delimiter = has_opt_module(module_name)
 
@@ -254,7 +255,7 @@ def deploy_modules_vagrant(dir_path,
             os.symlink(src, dst)
 
         else:
-            logger.debug('Deploying git {0}'.format(module_name))
+            logger.debug('Deploying git {0} with branch {1}'.format(module_name, module_branch))
             clone_module(module, dir_path, logger)
 
 
@@ -265,9 +266,10 @@ def deploy_modules(dir_path, modules, logger, environment='production'):
 
     for module in modules.items():
         module_name = str(module[0])
+        module_branch = str(module[1]['ref'])
         module_dir = os.path.join(dir_path, module_name)
 
-        logger.debug('Deploying git {0}'.format(module_name))
+        logger.debug('Deploying git {0} with branch {1}'.format(module_name, module_branch))
 
         rmdir(module_dir)
         clone_module(module, dir_path, logger)
