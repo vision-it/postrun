@@ -102,3 +102,13 @@ def test_commandline_module():
     test_parser = postrun.commandline(['-m', 'foobar'])
 
     assert(test_parser.module == 'foobar')
+
+@pytest.mark.main
+def test_commandline_module():
+    """
+    Test that the branch commandline arg can be set.
+    """
+
+    test_parser = postrun.commandline(['-b', 'foobar'])
+
+    assert(test_parser.branch == 'foobar')

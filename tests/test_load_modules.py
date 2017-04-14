@@ -35,6 +35,25 @@ def test_load_modules_real_env():
 
 
 @pytest.mark.modules
+def test_load_modules_with_branch(module):
+    """
+    Test if branch gets update when passed. Should return module with updated ref
+    """
+
+    mock_logger = mock.MagicMock()
+    expected_mod = {'roles': {'ref': 'new_branch', 'url': 'https://github.com/vision-it/puppet-roles.git'}}
+
+    directory = os.path.dirname(os.path.realpath(__file__))
+    loaded_mod = postrun.load_modules(directory,
+                                      mock_logger,
+                                      environment='',
+                                      location='not_loc',
+                                      branch='new_branch')
+
+    assert(loaded_mod == module)
+
+
+@pytest.mark.modules
 def test_load_modules_no_loc(module):
     """
     Test if no location is available in modules.yaml. Should return default location.

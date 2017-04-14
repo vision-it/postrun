@@ -67,6 +67,9 @@ def commandline(args):
     parser.add_argument("-m", "--module",
                         help="Name of the module to deploy")
 
+    parser.add_argument("-b", "--branch",
+                        help="Branch to deploy for a single module")
+
     parser.set_defaults(verbose=False, module='all')
 
     return parser.parse_args(args)
@@ -173,30 +176,39 @@ def get_location():
     return location
 
 
-# TODO Function is maybe to big
-def load_modules(dir_path, logger, environment='production', location='default', module_to_load='all'):
+# TODO Function is way to big
+def load_modules(dir_path, logger, environment='production', location='default', module_to_load='all', branch=None):
     """
     Loads the modules.yaml file
     """
 
+    # Check if modules.yaml exists
     modules_file = os.path.join(dir_path, environment, 'modules.yaml')
     if not os.path.isfile(modules_file):
         logger.error('No modules.yaml found for {0}'.format(environment))
         return {}
 
+    # Load modules from file
     yaml = load_yaml(modules_file)
     locations = yaml['modules']
 
+    # Get modules for the specified location
     try:
         modules = locations[str(location)]
     except:
         logger.warn('No module configuration for {0}, use default'.format(location))
         modules = locations['default']
 
-
+    # Get only single module if passed in arguments
     if module_to_load != 'all':
         try:
-            modules = {module_to_load: modules[module_to_load]}
+            module = modules[module_to_load]
+
+            # Update branch if passed in arguments
+            if branch:
+                module['ref'] = branch
+
+            modules = {module_to_load: module}
         except:
             logger.error('{0} not found in modules.yaml'.format(module_to_load))
             return {}
@@ -271,13 +283,14 @@ def main(args,
     Where the magic happens.
     """
 
-    mod = args.module
-    log = Logger(verbose=args.verbose)
+    module = args.module
+    branch = args.branch
+    logger = Logger(verbose=args.verbose)
 
     try:
         environments = os.listdir(puppet_base)
     except:
-        log.error('{0} not found'.format(puppet_base))
+        logger.error('{0} not found'.format(puppet_base))
         sys.exit(2)
 
     for env in environments:
@@ -290,13 +303,14 @@ def main(args,
         modules = load_modules(dir_path=puppet_base,
                                environment=env,
                                location=location,
-                               logger=log,
-                               module_to_load=mod)
+                               logger=logger,
+                               module_to_load=module,
+                               branch=branch)
 
         if is_vagrant:
-            deploy_modules_vagrant(dir_path=dist_dir, modules=modules, environment=env, logger=log)
+            deploy_modules_vagrant(dir_path=dist_dir, modules=modules, environment=env, logger=logger)
         else:
-            deploy_modules(dir_path=dist_dir, modules=modules, environment=env, logger=log)
+            deploy_modules(dir_path=dist_dir, modules=modules, environment=env, logger=logger)
 
     # That's all folks
     sys.exit(0)
