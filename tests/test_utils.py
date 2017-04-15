@@ -16,17 +16,15 @@ def module():
 
 
 @pytest.mark.utils
-@mock.patch('os.path.exists', return_value=False)
 @mock.patch('os.makedirs')
-def test_mkdir_directory(mock_exists, mock_make):
+def test_mkdir_directory(mock_make):
     """
     Test if mkdir creates the directory
     """
 
     postrun.mkdir('/puppet/foobar/bar')
 
-    mock_make.assert_called_once_with('/puppet/foobar/bar')
-
+    mock_make.assert_called_once_with('/puppet/foobar/bar', exist_ok=True)
 
 
 @pytest.mark.utils

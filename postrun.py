@@ -64,9 +64,10 @@ def mkdir(directory):
     Create a non existing directory.
     """
 
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
+    try:
+        os.makedirs(directory, exist_ok=True)
+    except:
+        pass
 
 def threaded(func):
     """
