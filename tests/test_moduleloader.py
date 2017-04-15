@@ -81,7 +81,6 @@ def test_moduleload_with_branch():
     assert(loaded_mod == expected_mod)
 
 
-@pytest.mark.modules
 def test_moduleloader_no_file():
     """
     Test if empty dict is returned if no modules.yaml is available

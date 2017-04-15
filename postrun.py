@@ -59,6 +59,14 @@ def commandline(args):
 
     return parser.parse_args(args)
 
+def mkdir(directory):
+    """
+    Create a non existing directory.
+    """
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
 
 def threaded(func):
     """
@@ -73,26 +81,6 @@ def threaded(func):
         return thread
 
     return run
-
-
-def rmdir(directory):
-    """
-    Removes a directory or symlink to a directory.
-    """
-
-    if os.path.exists(directory):
-        if os.path.islink(directory):
-            os.remove(directory)
-        else:
-            shutil.rmtree(directory)
-
-def mkdir(directory):
-    """
-    Create a non existing directory.
-    """
-
-    if not os.path.exists(directory):
-        os.makedirs(directory)
 
 
 def git(*args):
@@ -131,22 +119,6 @@ def is_vagrant():
     return os.path.exists('/vagrant')
 
 
-def has_opt_module(module_name, opt_path='/opt/puppet/modules/'):
-    """
-    Checks if there is there is a module in /opt.
-    Both with dashes and underscores in the name.
-    Returns a boolean and the delimiter of the module folders
-    """
-
-    module_path_dash = os.path.join(opt_path, module_name.replace('_', '-'))
-    module_path_underscore = os.path.join(opt_path, module_name)
-
-    is_path = os.path.exists(module_path_dash) or os.path.exists(module_path_underscore)
-    delimiter = '_' if os.path.exists(module_path_underscore) else '-'
-
-    return (is_path, delimiter)
-
-
 def get_location():
     """
     Gets the current location fact for this machine.
@@ -174,7 +146,6 @@ class ModuleLoader():
                  module=None,
                  branch=None):
 
-
         self.requested_module = module
         self.requested_branch = branch
         self.logger = logger
@@ -183,7 +154,7 @@ class ModuleLoader():
         self.location = str(location)
         self.modules_file_path = os.path.join(dir_path, environment, 'modules.yaml')
 
-        self.modules = self.load_modules_from_yaml()
+        self.modules = {}
 
     def load_modules_file(self):
         """
@@ -191,7 +162,7 @@ class ModuleLoader():
         """
 
         if not os.path.isfile(self.modules_file_path):
-            self.logger.error('{0} not found for {1}'.format(self.environment, self.modules_file_path))
+            self.logger.error('{1} not found for {0}'.format(self.environment, self.modules_file_path))
             return {}
 
         with open(self.modules_file_path, 'r') as yaml_file:
@@ -223,7 +194,7 @@ class ModuleLoader():
         Returns the modules as a dictionary
         """
 
-        modules = self.modules
+        modules = self.load_modules_from_yaml()
 
         if self.requested_module:
 
@@ -236,72 +207,96 @@ class ModuleLoader():
                 modules = {self.requested_module: module}
 
             except:
-                self.logger.error('Module {0} not found in'.format(self.requested_module))
+                self.logger.error('Module {0} not found in configuration'.format(self.requested_module))
                 modules = {}
 
         return modules
 
 
-def deploy_hiera(hiera_dir, hiera_opt='/opt/puppet/hiera'):
-    """
-    Removes and sets the symlink for the Hiera data in Vagrant.
-    """
+class ModuleDeployer():
 
-    rmdir(hiera_dir)
-    os.symlink(hiera_opt, hiera_dir)
+    def __init__(self,
+                 dir_path,
+                 logger,
+                 modules,
+                 is_vagrant,
+                 hiera_path='/etc/puppetlabs/code/hieradata',
+                 opt_path='/opt/puppet/modules',
+                 environment='production'):
 
+        self.logger = logger
+        self.modules = modules
+        self.directory = str(dir_path)
+        self.is_vagrant = is_vagrant
+        self.opt_path = opt_path
+        self.environment = environment
+        self.hiera_path = os.path.join(hiera_path, environment)
+        self.hiera_opt='/opt/puppet/hiera'
 
-def deploy_modules_vagrant(dir_path,
-                           modules,
-                           logger,
-                           hiera_path='/etc/puppetlabs/code/hieradata',
-                           opt_path='/opt/puppet/modules',
-                           environment='production'):
-    """
-    Deploys all modules in a Vagrant installation.
-    Uses symlinks for modules present in /opt
-    """
+    def has_opt_module(self, module_name):
+        """
+        Checks if there is there is a module in /opt.
+        Both with dashes and underscores in the name.
+        Returns a boolean and the delimiter of the module folders
+        """
 
-    hiera_dir = os.path.join(hiera_path, environment)
-    deploy_hiera(hiera_dir)
+        module_path_dash = os.path.join(self.opt_path, module_name.replace('_', '-'))
+        module_path_underscore = os.path.join(self.opt_path, module_name)
 
-    for module in modules.items():
-        module_name = str(module[0])
-        module_branch = str(module[1]['ref'])
-        module_dir = os.path.join(dir_path, module_name)
-        has_opt_path, delimiter = has_opt_module(module_name)
+        is_path = os.path.exists(module_path_dash) or os.path.exists(module_path_underscore)
+        delimiter = '_' if os.path.exists(module_path_underscore) else '-'
 
-        rmdir(module_dir)
+        return (is_path, delimiter)
 
-        if has_opt_path:
-            logger.debug('Deploying local {0}'.format(module_name))
+    def rmdir(self, directory):
+        """
+        Removes a directory or symlink to a directory.
+        """
 
-            src = os.path.join(opt_path, module_name.replace('_', delimiter))
-            dst = os.path.join(dir_path, module_name)
-            os.symlink(src, dst)
+        if os.path.exists(directory):
+            if os.path.islink(directory):
+                os.remove(directory)
+            else:
+                shutil.rmtree(directory)
 
-        else:
-            logger.debug('Deploying git {0} with branch {1}'.format(module_name, module_branch))
-            clone_module(module, dir_path, logger)
+    def deploy_hiera(self):
+        """
+        Removes and sets the symlink for the Hiera data in Vagrant.
+        """
 
+        self.rmdir(self.hiera_path)
+        os.symlink(self.hiera_opt, self.hiera_path)
 
-def deploy_modules(dir_path,
-                   modules,
-                   logger,
-                   environment='production'):
-    """
-    Deploys all modules passed via git.
-    """
+    def deploy_local(self, module_name, delimiter):
+        """
+        Uses /opt symlinks to deploy this module.
+        """
 
-    for module in modules.items():
-        module_name = str(module[0])
-        module_branch = str(module[1]['ref'])
-        module_dir = os.path.join(dir_path, module_name)
+        src = os.path.join(self.opt_path, module_name.replace('_', delimiter))
+        dst = os.path.join(self.directory, module_name)
+        os.symlink(src, dst)
 
-        logger.debug('Deploying git {0} with branch {1}'.format(module_name, module_branch))
+    def deploy_modules(self):
 
-        rmdir(module_dir)
-        clone_module(module, dir_path, logger)
+        if self.is_vagrant:
+            self.deploy_hiera()
+
+        for module in self.modules.items():
+            module_name = str(module[0])
+            module_branch = str(module[1]['ref'])
+            module_dir = os.path.join(self.directory, module_name)
+            has_opt_path, delimiter = self.has_opt_module(module_name)
+
+            self.rmdir(module_dir)
+
+            if self.is_vagrant and has_opt_path:
+                self.logger.debug('Deploying local {0}'.format(module_name))
+                self.deploy_local(module_name, delimiter)
+
+                continue # Continue loop since already deployed local
+
+            self.logger.debug('Deploying git {0} with branch {1}'.format(module_name, module_branch))
+            clone_module(module, self.directory, self.logger)
 
 
 def main(args,
@@ -331,26 +326,20 @@ def main(args,
         hiera_dir = os.path.join(hiera_base, env)
         mkdir(hiera_dir)
 
-        moduleloader = ModuleLoader(dir_path=puppet_base,
+        ml = ModuleLoader(dir_path=puppet_base,
                                     environment=env,
                                     location=location,
                                     logger=logger,
                                     module=module,
                                     branch=branch)
 
-        modules = moduleloader.modules
+        moduledeployer = ModuleDeployer(dir_path=dist_dir,
+                                        is_vagrant=is_vagrant,
+                                        environment=env,
+                                        modules=ml.get_modules(),
+                                        logger=logger)
 
-        if is_vagrant:
-            deploy_modules_vagrant(dir_path=dist_dir,
-                                   environment=env,
-                                   modules=modules,
-                                   logger=logger)
-
-        else:
-            deploy_modules(dir_path=dist_dir,
-                           environment=env,
-                           modules=modules,
-                           logger=logger)
+        moduledeployer.deploy_modules()
 
     # That's all folks
     sys.exit(0)

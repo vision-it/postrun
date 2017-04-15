@@ -17,8 +17,8 @@ def module():
 
 @pytest.mark.main
 @mock.patch('os.listdir')
-@mock.patch('postrun.load_modules')
-@mock.patch('postrun.deploy_modules')
+@mock.patch('postrun.ModuleLoader')
+@mock.patch('postrun.ModuleDeployer')
 @mock.patch('postrun.Logger')
 def test_main_no_folder(mock_log, mock_deploy, mock_mods, mock_os, capsys):
     """
@@ -34,8 +34,8 @@ def test_main_no_folder(mock_log, mock_deploy, mock_mods, mock_os, capsys):
 
 @pytest.mark.main
 @mock.patch('os.listdir')
-@mock.patch('postrun.load_modules')
-@mock.patch('postrun.deploy_modules')
+@mock.patch('postrun.ModuleLoader')
+@mock.patch('postrun.ModuleDeployer')
 @mock.patch('postrun.Logger')
 @mock.patch('sys.exit')
 @mock.patch('postrun.mkdir')
@@ -44,7 +44,6 @@ def test_main_regular(mock_mk, sys_exit, mock_log, mock_deploy, mock_mods, mock_
     Test main function regularly. Should call deploy_modules
     """
 
-    mock_mods.return_value = module
     mock_os.return_value = ['production', 'staging']
     mock_args = mock.MagicMock()
 
@@ -59,8 +58,8 @@ def test_main_regular(mock_mk, sys_exit, mock_log, mock_deploy, mock_mods, mock_
 
 @pytest.mark.main
 @mock.patch('os.listdir')
-@mock.patch('postrun.load_modules')
-@mock.patch('postrun.deploy_modules_vagrant')
+@mock.patch('postrun.ModuleLoader')
+@mock.patch('postrun.ModuleDeployer')
 @mock.patch('postrun.Logger')
 @mock.patch('sys.exit')
 @mock.patch('postrun.mkdir')
@@ -69,7 +68,6 @@ def test_main_vagrant(mock_mk, sys_exit, mock_log, mock_deploy, mock_mods, mock_
     Test main function called in Vagrant. Should call deploy_modules_vagrant
     """
 
-    mock_mods.return_value = module
     mock_os.return_value = ['production', 'staging']
     mock_args = mock.MagicMock()
 
@@ -91,7 +89,7 @@ def test_commandline_verbosity():
     test_parser = postrun.commandline(['-v'])
 
     assert(test_parser.verbose == True)
-    assert(test_parser.module == 'all')
+    assert(test_parser.module == None)
 
 @pytest.mark.main
 def test_commandline_module():
