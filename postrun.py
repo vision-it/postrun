@@ -11,21 +11,6 @@ import threading
 import yaml
 
 
-def threaded(func):
-    """
-    Multithreading function decorator
-    """
-
-    def run(*args, **kwargs):
-
-        thread = threading.Thread(target=func, args=args, kwargs=kwargs)
-        thread.start()
-
-        return thread
-
-    return run
-
-
 def Logger(log_format='%(asctime)s [%(levelname)s]: %(message)s',
            log_file='/var/log/postrun.log',
            verbose=False):
@@ -70,9 +55,24 @@ def commandline(args):
     parser.add_argument("-b", "--branch",
                         help="Branch to deploy for a single module")
 
-    parser.set_defaults(verbose=False, module='all')
+    parser.set_defaults(verbose=False)
 
     return parser.parse_args(args)
+
+
+def threaded(func):
+    """
+    Multithreading function decorator
+    """
+
+    def run(*args, **kwargs):
+
+        thread = threading.Thread(target=func, args=args, kwargs=kwargs)
+        thread.start()
+
+        return thread
+
+    return run
 
 
 def rmdir(directory):
@@ -123,18 +123,6 @@ def clone_module(module, target_directory, logger):
         logger.error('Error while cloning {0}'.format(name))
 
 
-def load_yaml(file_name):
-    """
-    Loads a YAML file.
-    Used to load the modules.yaml
-    """
-
-    with open(file_name, 'r') as yaml_file:
-        parsed_yaml = yaml.load(yaml_file)
-
-    return parsed_yaml
-
-
 def is_vagrant():
     """
     Checks if the current machine runs vagrant
@@ -176,44 +164,82 @@ def get_location():
     return location
 
 
-# TODO Function is way to big
-def load_modules(dir_path, logger, environment='production', location='default', module_to_load='all', branch=None):
-    """
-    Loads the modules.yaml file
-    """
+class ModuleLoader():
 
-    # Check if modules.yaml exists
-    modules_file = os.path.join(dir_path, environment, 'modules.yaml')
-    if not os.path.isfile(modules_file):
-        logger.error('No modules.yaml found for {0}'.format(environment))
-        return {}
+    def __init__(self,
+                 dir_path,
+                 logger,
+                 environment='production',
+                 location='default',
+                 module=None,
+                 branch=None):
 
-    # Load modules from file
-    yaml = load_yaml(modules_file)
-    locations = yaml['modules']
 
-    # Get modules for the specified location
-    try:
-        modules = locations[str(location)]
-    except:
-        logger.warn('No module configuration for {0}, use default'.format(location))
-        modules = locations['default']
+        self.requested_module = module
+        self.requested_branch = branch
+        self.logger = logger
+        self.directory = str(dir_path)
+        self.environment = str(environment)
+        self.location = str(location)
+        self.modules_file_path = os.path.join(dir_path, environment, 'modules.yaml')
 
-    # Get only single module if passed in arguments
-    if module_to_load != 'all':
-        try:
-            module = modules[module_to_load]
+        self.modules = self.load_modules_from_yaml()
 
-            # Update branch if passed in arguments
-            if branch:
-                module['ref'] = branch
+    def load_modules_file(self):
+        """
+        Load the modules from the modules file
+        """
 
-            modules = {module_to_load: module}
-        except:
-            logger.error('{0} not found in modules.yaml'.format(module_to_load))
+        if not os.path.isfile(self.modules_file_path):
+            self.logger.error('{0} not found for {1}'.format(self.environment, self.modules_file_path))
             return {}
 
-    return modules
+        with open(self.modules_file_path, 'r') as yaml_file:
+            parsed_yaml = yaml.load(yaml_file)
+
+        return parsed_yaml
+
+    def load_modules_from_yaml(self):
+        """
+        Get modules for the specified location
+        """
+
+        modules = {}
+
+        try:
+            yaml = self.load_modules_file()
+            locations = yaml['modules']
+            modules = locations[self.location]
+
+        except:
+            self.logger.warn('configuration for location {0} not found, using default'.format(self.location))
+            modules = locations['default']
+
+        finally:
+            return modules
+
+    def get_modules(self):
+        """
+        Returns the modules as a dictionary
+        """
+
+        modules = self.modules
+
+        if self.requested_module:
+
+            try:
+                module = modules[self.requested_module]
+
+                if self.requested_branch:
+                    module['ref'] = self.requested_branch
+
+                modules = {self.requested_module: module}
+
+            except:
+                self.logger.error('Module {0} not found in'.format(self.requested_module))
+                modules = {}
+
+        return modules
 
 
 def deploy_hiera(hiera_dir, hiera_opt='/opt/puppet/hiera'):
@@ -259,7 +285,10 @@ def deploy_modules_vagrant(dir_path,
             clone_module(module, dir_path, logger)
 
 
-def deploy_modules(dir_path, modules, logger, environment='production'):
+def deploy_modules(dir_path,
+                   modules,
+                   logger,
+                   environment='production'):
     """
     Deploys all modules passed via git.
     """
@@ -292,7 +321,7 @@ def main(args,
     try:
         environments = os.listdir(puppet_base)
     except:
-        logger.error('{0} not found'.format(puppet_base))
+        logger.error('{0} directory not found'.format(puppet_base))
         sys.exit(2)
 
     for env in environments:
@@ -302,17 +331,26 @@ def main(args,
         hiera_dir = os.path.join(hiera_base, env)
         mkdir(hiera_dir)
 
-        modules = load_modules(dir_path=puppet_base,
-                               environment=env,
-                               location=location,
-                               logger=logger,
-                               module_to_load=module,
-                               branch=branch)
+        moduleloader = ModuleLoader(dir_path=puppet_base,
+                                    environment=env,
+                                    location=location,
+                                    logger=logger,
+                                    module=module,
+                                    branch=branch)
+
+        modules = moduleloader.modules
 
         if is_vagrant:
-            deploy_modules_vagrant(dir_path=dist_dir, modules=modules, environment=env, logger=logger)
+            deploy_modules_vagrant(dir_path=dist_dir,
+                                   environment=env,
+                                   modules=modules,
+                                   logger=logger)
+
         else:
-            deploy_modules(dir_path=dist_dir, modules=modules, environment=env, logger=logger)
+            deploy_modules(dir_path=dist_dir,
+                           environment=env,
+                           modules=modules,
+                           logger=logger)
 
     # That's all folks
     sys.exit(0)
