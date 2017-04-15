@@ -26,6 +26,9 @@ def module():
 @pytest.mark.verbose
 @mock.patch('os.path.isfile', return_value=False)
 def test_ModulesLoader_no_modulesyaml(mock_isfile, mock_logger, capfd):
+    """
+    Test output with no modules.yaml
+    """
 
     ml = postrun.ModuleLoader(dir_path='/tmp',
                               logger=mock_logger,
@@ -40,6 +43,9 @@ def test_ModulesLoader_no_modulesyaml(mock_isfile, mock_logger, capfd):
 @pytest.mark.verbose
 @mock.patch('os.path.isfile', return_value=False)
 def test_ModulesLoader_using_default(mock_isfile, mock_logger, capfd):
+    """
+    Test output with default location
+    """
 
     ml = postrun.ModuleLoader(dir_path='/tmp',
                               logger=mock_logger,
@@ -57,6 +63,9 @@ def test_ModulesLoader_using_default(mock_isfile, mock_logger, capfd):
 
 @pytest.mark.verbose
 def test_ModulesLoader_no_module(mock_logger, capfd):
+    """
+    Test outwith with nonexisting module
+    """
 
     directory = os.path.dirname(os.path.realpath(__file__))
     ml = postrun.ModuleLoader(dir_path=directory,
@@ -72,11 +81,12 @@ def test_ModulesLoader_no_module(mock_logger, capfd):
     assert(out == '[ERROR]: Module foobar not found in configuration\n')
 
 
-
-######################################
 @pytest.mark.verbose
 @mock.patch('postrun.git')
 def test_clone_module_fail_verbose(mock_git, mock_logger, capfd):
+    """
+    Test output with git error
+    """
 
     mock_git.side_effect = RuntimeError('foo')
     module = ('roles',

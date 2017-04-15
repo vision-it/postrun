@@ -16,7 +16,7 @@ def module():
 @pytest.mark.deploy
 def test_moduledeployer_init(module):
     """
-    Test that deploy modules calls git to get a module
+    Test instantiation of ModuleDeployer
     """
 
     mock_logger = mock.MagicMock()
@@ -33,7 +33,7 @@ def test_moduledeployer_init(module):
 @mock.patch('os.symlink')
 def test_moduledeployer_deploy_local(mock_sym,  module):
     """
-    Test that deploy modules calls git to get a module
+    Test that the MD makes local symlinks
     """
 
     mock_logger = mock.MagicMock()
@@ -52,7 +52,7 @@ def test_moduledeployer_deploy_local(mock_sym,  module):
 @mock.patch('postrun.ModuleDeployer.rmdir')
 def test_moduledeployer_deploy_hiera(mock_rm, mock_sym,  module):
     """
-    Test that deploy modules calls git to get a module
+    Test that hiera deploy calls symlink
     """
 
     mock_logger = mock.MagicMock()
@@ -72,7 +72,7 @@ def test_moduledeployer_deploy_hiera(mock_rm, mock_sym,  module):
 @mock.patch('os.path.exists', return_value=True)
 def test_moduledeployer_rmdir(mock_path, mock_rm, mock_rmtree,  module):
     """
-    Test that deploy modules calls git to get a module
+    Test that rmdir removes a directory
     """
 
     mock_logger = mock.MagicMock()
@@ -92,9 +92,9 @@ def test_moduledeployer_rmdir(mock_path, mock_rm, mock_rmtree,  module):
 @mock.patch('os.remove')
 @mock.patch('os.path.exists', return_value=True)
 @mock.patch('os.path.islink', return_value=True)
-def test_moduledeployer_rmdir(mock_islink, mock_path, mock_rm, mock_rmtree,  module):
+def test_moduledeployer_rmdir_link(mock_islink, mock_path, mock_rm, mock_rmtree,  module):
     """
-    Test that deploy modules calls git to get a module
+    Test that rmdir removes a symlink
     """
 
     mock_logger = mock.MagicMock()
@@ -114,7 +114,7 @@ def test_moduledeployer_rmdir(mock_islink, mock_path, mock_rm, mock_rmtree,  mod
 @mock.patch('os.path.exists', return_value=True)
 def test_moduledeployer_has_opt_module(mock_path, module):
     """
-    Test that deploy modules calls git to get a module
+    Test correct return value
     """
 
     mock_logger = mock.MagicMock()
@@ -133,7 +133,7 @@ def test_moduledeployer_has_opt_module(mock_path, module):
 @mock.patch('postrun.clone_module')
 def test_moduledeployer_deploy_modules_regular(mock_clone, mock_rmdir, module):
     """
-    Test that deploy modules calls git to get a module
+    Test that git clone gets called
     """
 
     mock_logger = mock.MagicMock()
@@ -159,7 +159,7 @@ def test_moduledeployer_deploy_modules_regular(mock_clone, mock_rmdir, module):
 @mock.patch('postrun.clone_module')
 def test_moduledeployer_deploy_modules_vagrant_local(mock_clone, mock_opt, mock_local, mock_hiera, mock_rmdir, module):
     """
-    Test that deploy modules calls git to get a module
+    Test that symlinks get set in vagrant
     """
 
     mock_logger = mock.MagicMock()
@@ -183,7 +183,7 @@ def test_moduledeployer_deploy_modules_vagrant_local(mock_clone, mock_opt, mock_
 @mock.patch('postrun.clone_module')
 def test_moduledeployer_deploy_modules_vagrant_git(mock_clone, mock_opt, mock_local, mock_hiera, mock_rmdir, module):
     """
-    Test that deploy modules calls git to get a module
+    Test that git clone gets called  in vagrant
     """
 
     mock_logger = mock.MagicMock()

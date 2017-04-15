@@ -39,7 +39,7 @@ def test_moduleload_with_real_location():
 @pytest.mark.modules
 def test_moduleload_with_foobar_location(module):
     """
-    Test if real location gets loaded
+    Test if default location gets loaded
     """
 
     mock_logger = mock.MagicMock()
@@ -60,7 +60,7 @@ def test_moduleload_with_foobar_location(module):
 @pytest.mark.modules
 def test_moduleload_with_branch():
     """
-    Test if real location gets loaded
+    Test if branch gets updated
     """
 
     mock_logger = mock.MagicMock()

@@ -59,6 +59,7 @@ def commandline(args):
 
     return parser.parse_args(args)
 
+
 def mkdir(directory):
     """
     Create a non existing directory.
@@ -68,6 +69,7 @@ def mkdir(directory):
         os.makedirs(directory, exist_ok=True)
     except:
         pass
+
 
 def threaded(func):
     """
@@ -114,7 +116,7 @@ def clone_module(module, target_directory, logger):
 
 def is_vagrant():
     """
-    Checks if the current machine runs vagrant
+    Checks if the current machine runs vagrant.
     """
 
     return os.path.exists('/vagrant')
@@ -138,6 +140,9 @@ def get_location():
 
 
 class ModuleLoader():
+    """
+    Loads the modules.yaml and returns the modules as dictionary.
+    """
 
     def __init__(self,
                  dir_path,
@@ -215,6 +220,9 @@ class ModuleLoader():
 
 
 class ModuleDeployer():
+    """
+    Deployes the passed modules for Vagrant or on a real machine.
+    """
 
     def __init__(self,
                  dir_path,
@@ -251,6 +259,7 @@ class ModuleDeployer():
 
     def rmdir(self, directory):
         """
+        TODO: make general util
         Removes a directory or symlink to a directory.
         """
 
@@ -278,6 +287,9 @@ class ModuleDeployer():
         os.symlink(src, dst)
 
     def deploy_modules(self):
+        """
+        Loads the modules from either git or sets local symlinks
+        """
 
         if self.is_vagrant:
             self.deploy_hiera()
@@ -305,7 +317,6 @@ def main(args,
          location='default',
          puppet_base='/etc/puppetlabs/code/environments/',
          hiera_base='/etc/puppetlabs/code/hieradata'):
-
     """
     Where the magic happens.
     """
