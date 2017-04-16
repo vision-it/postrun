@@ -49,7 +49,7 @@ def test_moduledeployer_deploy_local(mock_sym,  module):
 
 @pytest.mark.deploy
 @mock.patch('os.symlink')
-@mock.patch('postrun.ModuleDeployer.rmdir')
+@mock.patch('postrun.rmdir')
 def test_moduledeployer_deploy_hiera(mock_rm, mock_sym,  module):
     """
     Test that hiera deploy calls symlink
@@ -65,50 +65,6 @@ def test_moduledeployer_deploy_hiera(mock_rm, mock_sym,  module):
     md.deploy_hiera()
 
     mock_sym.assert_called_once_with('/opt/puppet/hiera', '/etc/puppetlabs/code/hieradata/foobar')
-
-@pytest.mark.deploy
-@mock.patch('shutil.rmtree')
-@mock.patch('os.remove')
-@mock.patch('os.path.exists', return_value=True)
-def test_moduledeployer_rmdir(mock_path, mock_rm, mock_rmtree,  module):
-    """
-    Test that rmdir removes a directory
-    """
-
-    mock_logger = mock.MagicMock()
-    md = postrun.ModuleDeployer(dir_path='/',
-                                is_vagrant=False,
-                                logger=mock_logger,
-                                modules=module,
-                                environment='foobar')
-
-    md.rmdir('/tmp/postrun')
-
-    mock_path.assert_called_once_with('/tmp/postrun')
-    mock_rmtree.assert_called_once_with('/tmp/postrun')
-
-@pytest.mark.deploy
-@mock.patch('shutil.rmtree')
-@mock.patch('os.remove')
-@mock.patch('os.path.exists', return_value=True)
-@mock.patch('os.path.islink', return_value=True)
-def test_moduledeployer_rmdir_link(mock_islink, mock_path, mock_rm, mock_rmtree,  module):
-    """
-    Test that rmdir removes a symlink
-    """
-
-    mock_logger = mock.MagicMock()
-    md = postrun.ModuleDeployer(dir_path='/tmp',
-                                is_vagrant=False,
-                                logger=mock_logger,
-                                modules=module,
-                                environment='foobar')
-
-    md.rmdir('/tmp/postrun')
-
-    mock_path.assert_called_once_with('/tmp/postrun')
-    mock_islink.assert_called_once_with('/tmp/postrun')
-    mock_rm.assert_called_once_with('/tmp/postrun')
 
 @pytest.mark.deploy
 @mock.patch('os.path.exists', return_value=True)
@@ -129,7 +85,7 @@ def test_moduledeployer_has_opt_module(mock_path, module):
     assert((True, '_') == return_val)
 
 @pytest.mark.deploy
-@mock.patch('postrun.ModuleDeployer.rmdir')
+@mock.patch('postrun.rmdir')
 @mock.patch('postrun.clone_module')
 def test_moduledeployer_deploy_modules_regular(mock_clone, mock_rmdir, module):
     """
@@ -152,7 +108,7 @@ def test_moduledeployer_deploy_modules_regular(mock_clone, mock_rmdir, module):
 
 
 @pytest.mark.deploy
-@mock.patch('postrun.ModuleDeployer.rmdir')
+@mock.patch('postrun.rmdir')
 @mock.patch('postrun.ModuleDeployer.deploy_hiera')
 @mock.patch('postrun.ModuleDeployer.deploy_local')
 @mock.patch('postrun.ModuleDeployer.has_opt_module', return_value=(True, '_'))
@@ -176,7 +132,7 @@ def test_moduledeployer_deploy_modules_vagrant_local(mock_clone, mock_opt, mock_
     mock_local.assert_called_once_with('roles', '_')
 
 @pytest.mark.deploy
-@mock.patch('postrun.ModuleDeployer.rmdir')
+@mock.patch('postrun.rmdir')
 @mock.patch('postrun.ModuleDeployer.deploy_hiera')
 @mock.patch('postrun.ModuleDeployer.deploy_local')
 @mock.patch('postrun.ModuleDeployer.has_opt_module', return_value=(False, '_'))

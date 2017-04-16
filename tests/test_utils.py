@@ -28,6 +28,38 @@ def test_mkdir_directory(mock_make):
 
 
 @pytest.mark.utils
+@mock.patch('shutil.rmtree')
+@mock.patch('os.remove')
+@mock.patch('os.path.exists', return_value=True)
+def test_rmdir(mock_path, mock_rm, mock_rmtree,  module):
+    """
+    Test that rmdir removes a directory
+    """
+
+    postrun.rmdir('/tmp/postrun')
+
+    mock_path.assert_called_once_with('/tmp/postrun')
+    mock_rmtree.assert_called_once_with('/tmp/postrun')
+
+
+@pytest.mark.utils
+@mock.patch('shutil.rmtree')
+@mock.patch('os.remove')
+@mock.patch('os.path.exists', return_value=True)
+@mock.patch('os.path.islink', return_value=True)
+def test_rmdir_link(mock_islink, mock_path, mock_rm, mock_rmtree,  module):
+    """
+    Test that rmdir removes a symlink
+    """
+
+    postrun.rmdir('/tmp/postrun')
+
+    mock_path.assert_called_once_with('/tmp/postrun')
+    mock_islink.assert_called_once_with('/tmp/postrun')
+    mock_rm.assert_called_once_with('/tmp/postrun')
+
+
+@pytest.mark.utils
 @mock.patch('subprocess.check_call')
 def test_clone_module(mock_call):
     """

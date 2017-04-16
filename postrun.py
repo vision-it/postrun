@@ -71,6 +71,18 @@ def mkdir(directory):
         pass
 
 
+def rmdir(directory):
+    """
+    Removes a directory or symlink to a directory.
+    """
+
+    if os.path.exists(directory):
+        if os.path.islink(directory):
+            os.remove(directory)
+        else:
+            shutil.rmtree(directory)
+
+
 def threaded(func):
     """
     Multithreading function decorator
@@ -257,24 +269,12 @@ class ModuleDeployer():
 
         return (is_path, delimiter)
 
-    def rmdir(self, directory):
-        """
-        TODO: make general util
-        Removes a directory or symlink to a directory.
-        """
-
-        if os.path.exists(directory):
-            if os.path.islink(directory):
-                os.remove(directory)
-            else:
-                shutil.rmtree(directory)
-
     def deploy_hiera(self):
         """
         Removes and sets the symlink for the Hiera data in Vagrant.
         """
 
-        self.rmdir(self.hiera_path)
+        rmdir(self.hiera_path)
         os.symlink(self.hiera_opt, self.hiera_path)
 
     def deploy_local(self, module_name, delimiter):
@@ -300,7 +300,7 @@ class ModuleDeployer():
             module_dir = os.path.join(self.directory, module_name)
             has_opt_path, delimiter = self.has_opt_module(module_name)
 
-            self.rmdir(module_dir)
+            rmdir(module_dir)
 
             if self.is_vagrant and has_opt_path:
                 self.logger.debug('Deploying local {0}'.format(module_name))
