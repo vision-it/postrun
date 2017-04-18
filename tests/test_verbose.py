@@ -24,98 +24,69 @@ def module():
 
 
 @pytest.mark.verbose
-def test_load_modules_not_mod_verbose(mock_logger, capfd):
+@mock.patch('os.path.isfile', return_value=False)
+def test_ModulesLoader_no_modulesyaml(mock_isfile, mock_logger, capfd):
+    """
+    Test output with no modules.yaml
+    """
 
-    directory = os.path.dirname(os.path.realpath(__file__))
-    mod = postrun.load_modules(directory,
-                               mock_logger,
-                               environment='',
-                               location='some_loc',
-                               module_to_load='im_not_a_module')
+    ml = postrun.ModuleLoader(dir_path='/tmp',
+                              logger=mock_logger,
+                              environment='staging',
+                              location='some_loc')
 
+    ml.load_modules_file()
     out, err = capfd.readouterr()
 
-    assert(out == '[ERROR]: im_not_a_module not found in modules.yaml\n')
+    assert(out == '[ERROR]: /tmp/staging/modules.yaml not found for staging\n')
+
+@pytest.mark.verbose
+@mock.patch('os.path.isfile', return_value=False)
+def test_ModulesLoader_using_default(mock_isfile, mock_logger, capfd):
+    """
+    Test output with default location
+    """
+
+    ml = postrun.ModuleLoader(dir_path='/tmp',
+                              logger=mock_logger,
+                              environment='staging',
+                              location='some_loc')
+
+    ml.load_modules_file = mock.MagicMock()
+    ml.load_modules_file.side_effect = Exception('Boom!')
+
+    ml.load_modules_from_yaml()
+    out, err = capfd.readouterr()
+
+    assert(out == '[WARNING]: configuration for location some_loc not found, using default\n')
 
 
 @pytest.mark.verbose
-def test_load_modules_no_loc_verbose(module, mock_logger, capfd):
+def test_ModulesLoader_no_module(mock_logger, capfd):
+    """
+    Test outwith with nonexisting module
+    """
 
     directory = os.path.dirname(os.path.realpath(__file__))
-    loaded_mod = postrun.load_modules(directory,
-                                      mock_logger,
-                                      environment='',
-                                      location='not_loc')
+    ml = postrun.ModuleLoader(dir_path=directory,
+                              logger=mock_logger,
+                              environment='',
+                              module='foobar',
+                              branch='new_branch',
+                              location='default')
 
+    ml.get_modules()
     out, err = capfd.readouterr()
 
-    assert(out == '[WARNING]: No module configuration for not_loc, use default\n')
-
-
-@pytest.mark.verbose
-@mock.patch('postrun.rmdir')
-def test_load_modules_no_file_verbose(mock,mock_logger, capfd):
-
-    mod = postrun.load_modules('/foobar', mock_logger, 'staging')
-    out, err = capfd.readouterr()
-
-    assert(out == '[ERROR]: No modules.yaml found for staging\n')
-
-
-@pytest.mark.verbose
-@mock.patch('subprocess.check_call')
-@mock.patch('shutil.rmtree')
-def test_deploy_modules_verbose(mock_rm, mock_call, mock_logger, capfd):
-
-    directory = os.path.dirname(os.path.realpath(__file__))
-    modules = postrun.load_modules(directory,
-                                   mock_logger,
-                                   environment='',
-                                   location='some_loc')
-
-    postrun.deploy_modules('/foobar', modules, mock_logger)
-    out, err = capfd.readouterr()
-
-    assert (out == '[DEBUG]: Deploying git mod1_name\n')
-
-
-@pytest.mark.verbose
-@mock.patch('postrun.deploy_hiera')
-@mock.patch('postrun.clone_module')
-@mock.patch('os.symlink')
-@mock.patch('postrun.rmdir')
-def test_deploy_modules_vagrant_verbose(mock_clear, mock_sym, mock_clone, mock_hiera, mock_logger, capfd):
-
-    directory = os.path.dirname(os.path.realpath(__file__))
-    modules = postrun.load_modules(directory, mock_logger,  environment='', location='some_loc')
-
-    postrun.deploy_modules_vagrant('/foobar', modules, mock_logger)
-    out, err = capfd.readouterr()
-
-    assert (out == "[DEBUG]: Deploying git mod1_name\n")
-
-
-@pytest.mark.verbose
-@mock.patch('postrun.has_opt_module')
-@mock.patch('postrun.deploy_hiera')
-@mock.patch('postrun.clone_module')
-@mock.patch('os.symlink')
-@mock.patch('postrun.rmdir')
-def test_deploy_modules_vagrant_sym_verbose(mock_clear, mock_sym, mock_clone, mock_hiera, mock_hasmod, mock_logger, capfd):
-
-    directory = os.path.dirname(os.path.realpath(__file__))
-    modules = postrun.load_modules(directory, mock_logger, environment='', location='some_loc')
-    mock_hasmod.return_value = (True, '_')
-
-    postrun.deploy_modules_vagrant('/foobar', modules, mock_logger)
-    out, err = capfd.readouterr()
-
-    assert (out == "[DEBUG]: Deploying local mod1_name\n")
+    assert(out == '[ERROR]: Module foobar not found in configuration\n')
 
 
 @pytest.mark.verbose
 @mock.patch('postrun.git')
 def test_clone_module_fail_verbose(mock_git, mock_logger, capfd):
+    """
+    Test output with git error
+    """
 
     mock_git.side_effect = RuntimeError('foo')
     module = ('roles',

@@ -16,30 +16,30 @@ def module():
 
 
 @pytest.mark.utils
-@mock.patch('os.path.exists', return_value=False)
 @mock.patch('os.makedirs')
-def test_mkdir_directory(mock_exists, mock_make):
+def test_mkdir_directory(mock_make):
     """
     Test if mkdir creates the directory
     """
 
     postrun.mkdir('/puppet/foobar/bar')
 
-    mock_make.assert_called_once_with('/puppet/foobar/bar')
+    mock_make.assert_called_once_with('/puppet/foobar/bar', exist_ok=True)
 
 
 @pytest.mark.utils
 @mock.patch('shutil.rmtree')
 @mock.patch('os.remove')
 @mock.patch('os.path.exists', return_value=True)
-def test_rmdir_directory(mock_exists, mock_remove, mock_rm):
+def test_rmdir(mock_path, mock_rm, mock_rmtree,  module):
     """
-    Test if rmdir removes a real directory
+    Test that rmdir removes a directory
     """
 
-    postrun.rmdir('/puppet/foobar')
+    postrun.rmdir('/tmp/postrun')
 
-    mock_rm.assert_called_once_with('/puppet/foobar')
+    mock_path.assert_called_once_with('/tmp/postrun')
+    mock_rmtree.assert_called_once_with('/tmp/postrun')
 
 
 @pytest.mark.utils
@@ -47,62 +47,16 @@ def test_rmdir_directory(mock_exists, mock_remove, mock_rm):
 @mock.patch('os.remove')
 @mock.patch('os.path.exists', return_value=True)
 @mock.patch('os.path.islink', return_value=True)
-def test_rmdir_symlink(mock_link, mock_exists, mock_remove, mock_rm):
+def test_rmdir_link(mock_islink, mock_path, mock_rm, mock_rmtree,  module):
     """
-    Test if rmdir removes a symlink
-    """
-
-    postrun.rmdir('/puppet/foobar')
-
-    mock_remove.assert_called_once_with('/puppet/foobar')
-
-
-@pytest.mark.utils
-def test_load_yaml(module):
-    """
-    Test that a yaml file gets loaded.
+    Test that rmdir removes a symlink
     """
 
-    directory = os.path.dirname(os.path.realpath(__file__))
-    testfile = os.path.join(directory, "modules.yaml")
-    loaded_mod = postrun.load_yaml(testfile)
+    postrun.rmdir('/tmp/postrun')
 
-    assert(module == loaded_mod['modules']['default'])
-
-
-@pytest.mark.utils
-def test_has_opt_module_false():
-    """
-    Test that has_opt_module returns a default value if no /opt folder exists
-    """
-
-    return_val = postrun.has_opt_module('foobar')
-    assert(return_val == (False, '-'))
-
-
-@pytest.mark.utils
-@mock.patch('os.path.exists', return_value=True)
-def test_has_opt_module_true(mock_os):
-    """
-    Test that has_opt_module return True if /opt folder exists
-    """
-
-    return_val = postrun.has_opt_module('/opt', 'foobar')
-    assert(return_val == (True, '_'))
-
-
-@pytest.mark.utils
-@mock.patch('os.symlink')
-@mock.patch('postrun.rmdir')
-def test_deploy_hiera_with_folder(mock_rmdir, mock_sym):
-    """
-    Test that deploy_hiera (Vagrant) sets the symlink and removes the old folder
-    """
-
-    postrun.deploy_hiera(hiera_dir='/hiera/foobar/folder')
-
-    mock_rmdir.assert_called_once_with('/hiera/foobar/folder')
-    mock_sym.assert_called_once_with('/opt/puppet/hiera', '/hiera/foobar/folder')
+    mock_path.assert_called_once_with('/tmp/postrun')
+    mock_islink.assert_called_once_with('/tmp/postrun')
+    mock_rm.assert_called_once_with('/tmp/postrun')
 
 
 @pytest.mark.utils
