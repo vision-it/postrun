@@ -291,8 +291,9 @@ class ModuleDeployer():
         Loads the modules from either git or sets local symlinks
         """
 
-        if self.is_vagrant:
-            self.deploy_hiera()
+        # Disabled since we switched to g10k
+        # if self.is_vagrant:
+        #     self.deploy_hiera()
 
         for module in self.modules.items():
             module_name = str(module[0])

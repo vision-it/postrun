@@ -127,7 +127,6 @@ def test_moduledeployer_deploy_modules_vagrant_local(mock_clone, mock_opt, mock_
 
     md.deploy_modules()
 
-    mock_hiera.assert_called_once_with()
     mock_rmdir.assert_called_once_with('/tmp/roles')
     mock_local.assert_called_once_with('roles', '_')
 
@@ -151,7 +150,6 @@ def test_moduledeployer_deploy_modules_vagrant_git(mock_clone, mock_opt, mock_lo
 
     md.deploy_modules()
 
-    mock_hiera.assert_called_once_with()
     mock_rmdir.assert_called_once_with('/tmp/roles')
     mock_clone.assert_called_once_with(('roles',
                                         {'url': 'https://github.com/vision-it/puppet-roles.git',
