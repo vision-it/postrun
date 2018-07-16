@@ -81,6 +81,7 @@ def test_ModulesLoader_no_module(mock_logger, capfd):
     assert(out == '[ERROR]: Module foobar not found in configuration\n')
 
 
+@pytest.mark.xfail
 @pytest.mark.verbose
 @mock.patch('postrun.git')
 def test_clone_module_fail_verbose(mock_git, mock_logger, capfd):
