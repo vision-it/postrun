@@ -2,12 +2,12 @@
 
 
 import argparse
+import concurrent.futures
 import logging
 import os
 import shutil
 import subprocess
 import sys
-import threading
 import yaml
 
 
@@ -83,21 +83,6 @@ def rmdir(directory):
             shutil.rmtree(directory)
 
 
-def threaded(func):
-    """
-    Multithreading function decorator
-    """
-
-    def run(*args, **kwargs):
-
-        thread = threading.Thread(target=func, args=args, kwargs=kwargs)
-        thread.start()
-
-        return thread
-
-    return run
-
-
 def git(*args):
     """
     Subprocess wrapper for git
@@ -108,7 +93,6 @@ def git(*args):
     return subprocess.check_call(['git'] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
 
 
-@threaded
 def clone_module(module, target_directory, logger):
     """
     Clones a git repository.
@@ -292,25 +276,30 @@ class ModuleDeployer():
         """
 
         # Disabled since we switched to g10k
+        # Problem is, that g10k does a shallow clone an removes the .git directory in the hiera repo
         # if self.is_vagrant:
         #     self.deploy_hiera()
 
-        for module in self.modules.items():
-            module_name = str(module[0])
-            module_branch = str(module[1]['ref'])
-            module_dir = os.path.join(self.directory, module_name)
-            has_opt_path, delimiter = self.has_opt_module(module_name)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            for module in self.modules.items():
+                module_name = str(module[0])
+                module_branch = str(module[1]['ref'])
+                module_dir = os.path.join(self.directory, module_name)
+                has_opt_path, delimiter = self.has_opt_module(module_name)
 
-            rmdir(module_dir)
+                rmdir(module_dir)
+                self.logger.debug('Removed {0}'.format(module_dir))
 
-            if self.is_vagrant and has_opt_path:
-                self.logger.debug('Deploying local {0}'.format(module_name))
-                self.deploy_local(module_name, delimiter)
+                if self.is_vagrant and has_opt_path:
+                    self.logger.debug('Deploying local {0}'.format(module_name))
+                    self.deploy_local(module_name, delimiter)
+                    # Continue loop since already deployed local
+                    continue
 
-                continue # Continue loop since already deployed local
+                self.logger.debug('Deploying git {0} with branch {1}'.format(module_name, module_branch))
+                executor.submit(clone_module(module, self.directory, self.logger))
 
-            self.logger.debug('Deploying git {0} with branch {1}'.format(module_name, module_branch))
-            clone_module(module, self.directory, self.logger)
+            executor.shutdown(wait=True)
 
 
 def main(args,
