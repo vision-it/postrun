@@ -1,0 +1,18 @@
+# nfpm config file
+name: "postrun"
+arch: "all"
+platform: "linux"
+version: "0.0.1"
+section: "default"
+priority: "extra"
+depends:
+- python3
+- python3-yaml
+maintainer: "Vision-IT <vision-it@iis.fraunhofer.de>"
+description: |
+  Deploys Puppet modules from modules.yaml
+homepage: "https://github.com/vision-it/postrun"
+license: "MIT"
+bindir: "/usr/bin"
+files:
+  ./postrun.py: "/usr/bin/postrun"

@@ -45,6 +45,14 @@ Running the postrun script verbose:
 
 The script writes all messages to stdout and into a logfile */var/log/postrun.log*.
 
+# Package
+
+Build a (Debian) package for this executable by using [nfpm](https://github.com/goreleaser/nfpm):
+
+```
+nfpm pkg --target postrun.deb
+```
+
 # Testing and Development
 
 Installing requirements:
