@@ -339,6 +339,7 @@ def main(args,
     module = args.module
     branch = args.branch
     logger = create_logger(verbose=args.verbose)
+    deployment_ok = []
 
     try:
         environments = os.listdir(puppet_base)
@@ -369,11 +370,12 @@ def main(args,
                                         logger=logger)
 
         moduledeployer.deploy_modules()
+        deployment_ok.append(moduledeployer.validate_deployment())
 
-        if not moduledeployer.validate_deployment():
-            sys.exit(1)
+    if not all(deployment_ok):
+        sys.exit(1)
 
-        sys.exit(0)
+    sys.exit(0)
 
 
 if __name__ == "__main__":
