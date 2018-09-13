@@ -4,6 +4,7 @@
 import pytest
 import os
 import unittest.mock as mock
+import subprocess
 
 import postrun
 
@@ -121,7 +122,7 @@ def test_get_location_exception(mock_popen):
     Test return if facter isn't available
     """
 
-    mock_popen.side_effect = KeyError('foo')
+    mock_popen.side_effect = subprocess.CalledProcessError(1, 'foo')
 
     location = postrun.get_location()
 

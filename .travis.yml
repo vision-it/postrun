@@ -1,14 +1,14 @@
 language: python
 python:
-- '3.3'
 - '3.4'
 - '3.5'
-- 3.5-dev
+- '3.6'
 - nightly
 install:
 - pip install coveralls
 - pip install -r tests/requirements.txt
 script:
+- pylint postrun.py
 - py.test --cov=postrun tests/
 after_success: coveralls
 notifications:

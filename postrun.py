@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
 
 
+"""
+The Postrun script is used to either load out Puppet Modules (modules.yaml) from git in production or create symlink to local code in Vagrant
+This solves the problem that we don't want use local code for development and remote code in production, also we might have different git remotes in production and
+the Puppetfile cannot handle that
+"""
+
 import argparse
+import concurrent.futures
 import logging
 import os
 import shutil
 import subprocess
 import sys
-import threading
 import yaml
 
 
-def Logger(log_format='%(asctime)s [%(levelname)s]: %(message)s',
-           log_file='/var/log/postrun.log',
-           verbose=False):
+def create_logger(log_format='%(asctime)s [%(levelname)s]: %(message)s',
+                  log_file='/var/log/postrun.log',
+                  verbose=False):
     """
     Settings for the logging. Logs are printed to stdout and into a file.
     Returns the logger objects.
@@ -65,10 +71,7 @@ def mkdir(directory):
     Create a non existing directory.
     """
 
-    try:
-        os.makedirs(directory, exist_ok=True)
-    except:
-        pass
+    os.makedirs(directory, exist_ok=True)
 
 
 def rmdir(directory):
@@ -83,21 +86,6 @@ def rmdir(directory):
             shutil.rmtree(directory)
 
 
-def threaded(func):
-    """
-    Multithreading function decorator
-    """
-
-    def run(*args, **kwargs):
-
-        thread = threading.Thread(target=func, args=args, kwargs=kwargs)
-        thread.start()
-
-        return thread
-
-    return run
-
-
 def git(*args):
     """
     Subprocess wrapper for git
@@ -108,7 +96,6 @@ def git(*args):
     return subprocess.check_call(['git'] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
 
 
-@threaded
 def clone_module(module, target_directory, logger):
     """
     Clones a git repository.
@@ -122,8 +109,12 @@ def clone_module(module, target_directory, logger):
 
     try:
         git('clone', '--depth', '1', url, '-b', ref, target)
-    except:
+    except subprocess.CalledProcessError as exp:
         logger.error('Error while cloning {0}'.format(name))
+        logger.debug(exp)
+    except RuntimeError as exp:
+        logger.error('Error while cloning {0}'.format(name))
+        logger.debug(exp)
 
 
 def is_vagrant():
@@ -140,13 +131,15 @@ def get_location():
     Returns default if nothing is found.
     """
 
+    location = 'default'
+
     try:
         cmd = ['/opt/puppetlabs/bin/facter', 'location']
-        p = subprocess.check_output(cmd)
-        location = p.decode("utf-8").rstrip('\n')
-
-    except:
-        location = 'default'
+        proc = subprocess.check_output(cmd)
+        location = proc.decode("utf-8").rstrip('\n')
+    except subprocess.CalledProcessError:
+        # TODO: Add logging for this
+        pass
 
     return location
 
@@ -194,16 +187,15 @@ class ModuleLoader():
         """
 
         modules = {}
+        yaml = self.load_modules_file()
 
+        # pylint: disable=lost-exception
         try:
-            yaml = self.load_modules_file()
             locations = yaml['modules']
             modules = locations[self.location]
-
-        except:
-            self.logger.warn('configuration for location {0} not found, using default'.format(self.location))
+        except KeyError:
+            self.logger.info('configuration for location %s not found, using default', self.location)
             modules = locations['default']
-
         finally:
             return modules
 
@@ -224,8 +216,8 @@ class ModuleLoader():
 
                 modules = {self.requested_module: module}
 
-            except:
-                self.logger.error('Module {0} not found in configuration'.format(self.requested_module))
+            except KeyError:
+                self.logger.error('Module %s not found in configuration', self.requested_module)
                 modules = {}
 
         return modules
@@ -252,7 +244,7 @@ class ModuleDeployer():
         self.opt_path = opt_path
         self.environment = environment
         self.hiera_path = os.path.join(hiera_path, environment)
-        self.hiera_opt='/opt/puppet/hiera'
+        self.hiera_opt = '/opt/puppet/hiera'
 
     def has_opt_module(self, module_name):
         """
@@ -286,31 +278,53 @@ class ModuleDeployer():
         dst = os.path.join(self.directory, module_name)
         os.symlink(src, dst)
 
+    def validate_deployment(self):
+        """
+        Validate if all modules are deployed correctly
+        """
+
+        deployment_ok = True
+
+        for module in self.modules.items():
+            module_name = str(module[0])
+            module_git_dir = os.path.join(self.directory, module_name, '.git')
+
+            if not os.path.isdir(module_git_dir):
+                deployment_ok = False
+                self.logger.error('%s not deployed', module_name)
+
+        return deployment_ok
+
     def deploy_modules(self):
         """
         Loads the modules from either git or sets local symlinks
         """
 
         # Disabled since we switched to g10k
+        # Problem is, that g10k does a shallow clone an removes the .git directory in the hiera repo
         # if self.is_vagrant:
         #     self.deploy_hiera()
 
-        for module in self.modules.items():
-            module_name = str(module[0])
-            module_branch = str(module[1]['ref'])
-            module_dir = os.path.join(self.directory, module_name)
-            has_opt_path, delimiter = self.has_opt_module(module_name)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            for module in self.modules.items():
+                module_name = str(module[0])
+                module_branch = str(module[1]['ref'])
+                module_dir = os.path.join(self.directory, module_name)
+                has_opt_path, delimiter = self.has_opt_module(module_name)
 
-            rmdir(module_dir)
+                rmdir(module_dir)
+                self.logger.debug('Removed {0}'.format(module_dir))
 
-            if self.is_vagrant and has_opt_path:
-                self.logger.debug('Deploying local {0}'.format(module_name))
-                self.deploy_local(module_name, delimiter)
+                if self.is_vagrant and has_opt_path:
+                    self.logger.debug('Deploying local {0}'.format(module_name))
+                    self.deploy_local(module_name, delimiter)
+                    # Continue loop since already deployed local
+                    continue
 
-                continue # Continue loop since already deployed local
+                self.logger.debug('Deploying git {0} with branch {1}'.format(module_name, module_branch))
+                executor.submit(clone_module(module, self.directory, self.logger))
 
-            self.logger.debug('Deploying git {0} with branch {1}'.format(module_name, module_branch))
-            clone_module(module, self.directory, self.logger)
+            executor.shutdown(wait=True)
 
 
 def main(args,
@@ -324,22 +338,24 @@ def main(args,
 
     module = args.module
     branch = args.branch
-    logger = Logger(verbose=args.verbose)
+    logger = create_logger(verbose=args.verbose)
 
     try:
         environments = os.listdir(puppet_base)
-    except:
-        logger.error('{0} directory not found'.format(puppet_base))
-        sys.exit(2)
+    except FileNotFoundError:
+        logger.error('%s directory not found', puppet_base)
+        sys.exit(1)
 
     for env in environments:
+        logger.info('Postrunning for environment %s', env)
+
         dist_dir = os.path.join(puppet_base, env, 'dist')
         mkdir(dist_dir)
 
         hiera_dir = os.path.join(hiera_base, env)
         mkdir(hiera_dir)
 
-        ml = ModuleLoader(dir_path=puppet_base,
+        moduleloader = ModuleLoader(dir_path=puppet_base,
                                     environment=env,
                                     location=location,
                                     logger=logger,
@@ -349,19 +365,21 @@ def main(args,
         moduledeployer = ModuleDeployer(dir_path=dist_dir,
                                         is_vagrant=is_vagrant,
                                         environment=env,
-                                        modules=ml.get_modules(),
+                                        modules=moduleloader.get_modules(),
                                         logger=logger)
 
         moduledeployer.deploy_modules()
 
-    # That's all folks
-    sys.exit(0)
+        if not moduledeployer.validate_deployment():
+            sys.exit(1)
+
+        sys.exit(0)
 
 
 if __name__ == "__main__":
 
-    args = commandline(sys.argv[1:])
-    is_vagrant = is_vagrant()
-    location = get_location()
+    ARGS = commandline(sys.argv[1:])
+    IS_VAGRANT = is_vagrant()
+    LOCATION = get_location()
 
-    main(args, is_vagrant, location)
+    main(ARGS, IS_VAGRANT, LOCATION)

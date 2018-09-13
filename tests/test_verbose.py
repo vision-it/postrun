@@ -11,9 +11,9 @@ import postrun
 @pytest.fixture(scope='session')
 def mock_logger():
 
-    return postrun.Logger(log_format='[%(levelname)s]: %(message)s',
-                          log_file='/tmp/pytest-postrun.log',
-                          verbose=True)
+    return postrun.create_logger(log_format='[%(levelname)s]: %(message)s',
+                                 log_file='/tmp/pytest-postrun.log',
+                                 verbose=True)
 
 
 @pytest.fixture
@@ -53,12 +53,12 @@ def test_ModulesLoader_using_default(mock_isfile, mock_logger, capfd):
                               location='some_loc')
 
     ml.load_modules_file = mock.MagicMock()
-    ml.load_modules_file.side_effect = Exception('Boom!')
+    ml.load_modules_file.return_value = {}
 
     ml.load_modules_from_yaml()
     out, err = capfd.readouterr()
 
-    assert(out == '[WARNING]: configuration for location some_loc not found, using default\n')
+    assert(out == '[INFO]: configuration for location some_loc not found, using default\n')
 
 
 @pytest.mark.verbose
