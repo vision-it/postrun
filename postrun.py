@@ -112,6 +112,9 @@ def clone_module(module, target_directory, logger):
     except subprocess.CalledProcessError as exp:
         logger.error('Error while cloning {0}'.format(name))
         logger.debug(exp)
+    except RuntimeError as exp:
+        logger.error('Error while cloning {0}'.format(name))
+        logger.debug(exp)
 
 
 def is_vagrant():
@@ -128,15 +131,15 @@ def get_location():
     Returns default if nothing is found.
     """
 
+    location = 'default'
+
     try:
         cmd = ['/opt/puppetlabs/bin/facter', 'location']
         proc = subprocess.check_output(cmd)
         location = proc.decode("utf-8").rstrip('\n')
     except subprocess.CalledProcessError:
-        location = 'default'
-    finally:
-        if not location:
-            location = 'default'
+        # TODO: Add logging for this
+        pass
 
     return location
 
@@ -184,16 +187,17 @@ class ModuleLoader():
         """
 
         modules = {}
+        yaml = self.load_modules_file()
 
+        # pylint: disable=lost-exception
         try:
-            yaml = self.load_modules_file()
             locations = yaml['modules']
             modules = locations[self.location]
         except KeyError:
-            self.logger.info('configuration for location {0} not found, using default'.format(self.location))
+            self.logger.info('configuration for location %s not found, using default', self.location)
             modules = locations['default']
-
-        return modules
+        finally:
+            return modules
 
     def get_modules(self):
         """
@@ -213,7 +217,7 @@ class ModuleLoader():
                 modules = {self.requested_module: module}
 
             except KeyError:
-                self.logger.error('Module {0} not found in configuration'.format(self.requested_module))
+                self.logger.error('Module %s not found in configuration', self.requested_module)
                 modules = {}
 
         return modules

@@ -19,7 +19,7 @@ def module():
 @mock.patch('os.listdir')
 @mock.patch('postrun.ModuleLoader')
 @mock.patch('postrun.ModuleDeployer')
-@mock.patch('postrun.Logger')
+@mock.patch('postrun.create_logger')
 def test_main_no_folder(mock_log, mock_deploy, mock_mods, mock_os, capsys):
     """
     Test main function without existing folder. Should exit with 2
@@ -36,7 +36,7 @@ def test_main_no_folder(mock_log, mock_deploy, mock_mods, mock_os, capsys):
 @mock.patch('os.listdir')
 @mock.patch('postrun.ModuleLoader')
 @mock.patch('postrun.ModuleDeployer')
-@mock.patch('postrun.Logger')
+@mock.patch('postrun.create_logger')
 @mock.patch('sys.exit')
 @mock.patch('postrun.mkdir')
 def test_main_regular(mock_mk, sys_exit, mock_log, mock_deploy, mock_mods, mock_os, module):
@@ -60,7 +60,7 @@ def test_main_regular(mock_mk, sys_exit, mock_log, mock_deploy, mock_mods, mock_
 @mock.patch('os.listdir')
 @mock.patch('postrun.ModuleLoader')
 @mock.patch('postrun.ModuleDeployer')
-@mock.patch('postrun.Logger')
+@mock.patch('postrun.create_logger')
 @mock.patch('sys.exit')
 @mock.patch('postrun.mkdir')
 def test_main_vagrant(mock_mk, sys_exit, mock_log, mock_deploy, mock_mods, mock_os, module):
