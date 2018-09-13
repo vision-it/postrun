@@ -66,6 +66,45 @@ def test_moduledeployer_deploy_hiera(mock_rm, mock_sym,  module):
 
     mock_sym.assert_called_once_with('/opt/puppet/hiera', '/etc/puppetlabs/code/hieradata/foobar')
 
+
+@pytest.mark.deploy
+@mock.patch('os.path.isdir', return_value=True)
+def test_moduledeployer_validate_deployment(mock_dir, module):
+    """
+    Test that hiera deploy calls symlink
+    """
+
+    mock_logger = mock.MagicMock()
+    md = postrun.ModuleDeployer(dir_path='/',
+                                is_vagrant=False,
+                                logger=mock_logger,
+                                modules=module,
+                                environment='foobar')
+
+    actual = md.validate_deployment()
+
+    mock_dir.assert_called_once_with('/roles/.git')
+    assert(actual == True)
+
+
+@pytest.mark.deploy
+@mock.patch('os.path.isdir', return_value=False)
+def test_moduledeployer_validate_deployment(mock_dir, module):
+    """
+    Test that hiera deploy calls symlink
+    """
+
+    mock_logger = mock.MagicMock()
+    md = postrun.ModuleDeployer(dir_path='/',
+                                is_vagrant=False,
+                                logger=mock_logger,
+                                modules=module,
+                                environment='foobar')
+
+    actual = md.validate_deployment()
+    assert(actual == False)
+
+
 @pytest.mark.deploy
 @mock.patch('os.path.exists', return_value=True)
 def test_moduledeployer_has_opt_module(mock_path, module):

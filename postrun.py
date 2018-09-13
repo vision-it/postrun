@@ -278,6 +278,23 @@ class ModuleDeployer():
         dst = os.path.join(self.directory, module_name)
         os.symlink(src, dst)
 
+    def validate_deployment(self):
+        """
+        Validate if all modules are deployed correctly
+        """
+
+        deployment_ok = True
+
+        for module in self.modules.items():
+            module_name = str(module[0])
+            module_git_dir = os.path.join(self.directory, module_name, '.git')
+
+            if not os.path.isdir(module_git_dir):
+                deployment_ok = False
+                self.logger.error('%s not deployed', module_name)
+
+        return deployment_ok
+
     def deploy_modules(self):
         """
         Loads the modules from either git or sets local symlinks
@@ -330,7 +347,7 @@ def main(args,
         sys.exit(1)
 
     for env in environments:
-        logger.info('Postrunning for branch %s', env)
+        logger.info('Postrunning for environment %s', env)
 
         dist_dir = os.path.join(puppet_base, env, 'dist')
         mkdir(dist_dir)
@@ -353,8 +370,10 @@ def main(args,
 
         moduledeployer.deploy_modules()
 
-    # That's all folks
-    sys.exit(0)
+        if not moduledeployer.validate_deployment():
+            sys.exit(1)
+
+        sys.exit(0)
 
 
 if __name__ == "__main__":
