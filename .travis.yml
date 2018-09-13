@@ -9,6 +9,7 @@ install:
 - pip install coveralls
 - pip install -r tests/requirements.txt
 script:
+- pylint postrun.py
 - py.test --cov=postrun tests/
 after_success: coveralls
 notifications:
