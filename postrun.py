@@ -52,11 +52,11 @@ def commandline(args):
     parser = argparse.ArgumentParser(description='Postrun script to deploy Puppet modules via git or locally')
 
     parser.add_argument("-v", "--verbose",
-                        help="increase output verbosity",
+                        help="Increase output verbosity",
                         action="store_true")
 
     parser.add_argument("-m", "--module",
-                        help="Name of the module to deploy")
+                        help="Name of the module to deploy. Example: vision_foobar")
 
     parser.add_argument("-b", "--branch",
                         help="Branch to deploy for a single module")
